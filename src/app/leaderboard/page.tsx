@@ -1,33 +1,34 @@
 import { LeaderboardTable } from "@/components/LeaderboardTable";
-import { getDb } from "@/lib/db";
-import { predictions, users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { getClient } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-async function getLeaderboardData() {
-  const data = await getDb()
-    .select({
-      id: predictions.id,
-      userId: predictions.userId,
-      winnerTeam: predictions.winnerTeam,
-      favoriteTeam: predictions.favoriteTeam,
-      createdAt: predictions.createdAt,
-      updatedAt: predictions.updatedAt,
-      userName: users.name,
-    })
-    .from(predictions)
-    .leftJoin(users, eq(predictions.userId, users.id));
+interface LeaderboardRow {
+  id: string;
+  userId: string;
+  winnerTeam: string;
+  favoriteTeam: string;
+  createdAt: string;
+  updatedAt: string;
+  userName: string;
+}
 
-  return data.map((row) => ({
-    ...row,
-    userName: row.userName ?? "Anonymous",
-    createdAt: row.createdAt instanceof Date
-      ? row.createdAt.toISOString()
-      : String(row.createdAt),
-    updatedAt: row.updatedAt instanceof Date
-      ? row.updatedAt.toISOString()
-      : String(row.updatedAt),
+async function getLeaderboardData(): Promise<LeaderboardRow[]> {
+  const client = getClient();
+  const result = await client.execute(
+    `SELECT p.id, p.user_id as userId, p.winner_team as winnerTeam, p.favorite_team as favoriteTeam, p.created_at as createdAt, p.updated_at as updatedAt, u.name as userName
+     FROM predictions p
+     LEFT JOIN users u ON p.user_id = u.id`
+  );
+
+  return result.rows.map((row) => ({
+    id: String(row.id),
+    userId: String(row.userId),
+    winnerTeam: String(row.winnerTeam),
+    favoriteTeam: String(row.favoriteTeam),
+    createdAt: String(row.createdAt),
+    updatedAt: String(row.updatedAt),
+    userName: row.userName != null ? String(row.userName) : "Anonymous",
   }));
 }
 

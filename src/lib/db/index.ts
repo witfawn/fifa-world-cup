@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
+let _client: ReturnType<typeof import("@libsql/client").createClient> | null = null;
 
 export function getDb() {
   if (!_db) {
@@ -18,7 +19,15 @@ export function getDb() {
       url,
       authToken: process.env.TURSO_AUTH_TOKEN,
     });
+    _client = client;
     _db = drizzle(client, { schema });
   }
   return _db;
+}
+
+export function getClient() {
+  if (!_client) {
+    getDb();
+  }
+  return _client!;
 }
