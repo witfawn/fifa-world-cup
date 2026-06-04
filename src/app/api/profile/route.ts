@@ -1,15 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { getDb, getClient } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+
+let migrated = false;
+
+async function ensureColumns() {
+  if (migrated) return;
+  const client = getClient();
+  try {
+    await client.execute("ALTER TABLE users ADD COLUMN avatar_color TEXT");
+  } catch {
+    // already exists
+  }
+  try {
+    await client.execute(
+      "ALTER TABLE users ADD COLUMN profile_complete INTEGER NOT NULL DEFAULT 0"
+    );
+  } catch {
+    // already exists
+  }
+  migrated = true;
+}
 
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
+
+  await ensureColumns();
 
   const db = getDb();
   const result = await db
@@ -30,6 +52,8 @@ export async function PUT(req: NextRequest) {
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
+
+  await ensureColumns();
 
   const body = await req.json();
   const { name, phone, image, avatarColor, profileComplete } = body;
