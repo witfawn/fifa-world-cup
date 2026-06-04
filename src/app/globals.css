@@ -3,21 +3,32 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0a0f1a;
+  --foreground: #f0f0f0;
+  --gold: #d4a843;
+  --gold-dark: #b8922e;
+  --navy: #0f1729;
+  --navy-light: #1a2540;
+  --surface: #151e33;
+  --surface-hover: #1c2845;
+  --border: #253050;
+  --muted: #7a8ba8;
+  --danger: #e5484d;
+  --success: #30a46c;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Subtle animated background for login */
+.bg-pattern {
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(212, 168, 67, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(212, 168, 67, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 50% 80%, rgba(30, 58, 100, 0.15) 0%, transparent 50%);
 }
 
 @layer utilities {

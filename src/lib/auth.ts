@@ -23,7 +23,7 @@ const baseConfig: Omit<NextAuthOptions, "adapter"> = {
     }),
   },
   pages: {
-    signIn: "/",
+    signIn: "/login",
   },
 };
 
