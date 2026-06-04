@@ -1,5 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { verifyMagicToken } from "@/lib/magic-link";
 
 const AVATAR_COLORS = [
   "#d4a843", // gold
@@ -22,14 +24,69 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
+    CredentialsProvider({
+      name: "Magic Link",
+      credentials: {
+        token: { label: "Token", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.token) return null;
+
+        const email = await verifyMagicToken(credentials.token);
+        if (!email) return null;
+
+        // Look up or create user in DB
+        try {
+          const { getDb } = await import("@/lib/db");
+          const { users } = await import("@/lib/db/schema");
+          const { eq } = await import("drizzle-orm");
+
+          const db = getDb();
+          const existing = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, email))
+            .limit(1);
+
+          if (existing.length > 0) {
+            return {
+              id: existing[0].id,
+              email: existing[0].email,
+              name: existing[0].name,
+              image: existing[0].image,
+            };
+          }
+
+          // New user — create account
+          const id = crypto.randomUUID();
+          const name = email.split("@")[0];
+          await db.insert(users).values({
+            id,
+            email,
+            name,
+            image: null,
+            avatarColor: getRandomColor(),
+            profileComplete: false,
+          });
+
+          return { id, email, name, image: null };
+        } catch (err) {
+          console.error("Magic link auth error:", err);
+          return null;
+        }
+      },
+    }),
   ],
   session: {
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, account }) {
+    async jwt({ token, account, user }) {
       if (account) {
-        token.id = account.providerAccountId;
+        token.id = account.providerAccountId || user?.id;
+      }
+      if (user) {
+        token.id = user.id;
       }
       return token;
     },

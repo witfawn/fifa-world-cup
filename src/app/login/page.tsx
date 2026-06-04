@@ -3,11 +3,15 @@
 import { signIn } from "next-auth/react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function LoginPage() {
   const { status } = useSession();
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -18,6 +22,32 @@ export default function LoginPage() {
   if (status === "authenticated") {
     return null;
   }
+
+  const handleMagicLink = async () => {
+    if (!email.trim()) return;
+    setSending(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setSent(true);
+      } else {
+        setError(data.error || "Something went wrong.");
+      }
+    } catch {
+      setError("Failed to send login link.");
+    }
+
+    setSending(false);
+  };
 
   return (
     <div className="min-h-screen bg-pattern flex items-center justify-center px-4">
@@ -107,6 +137,86 @@ export default function LoginPage() {
             </svg>
             Sign in with Google
           </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 h-px" style={{ backgroundColor: "var(--border)" }} />
+            <span className="text-xs" style={{ color: "var(--muted)" }}>or</span>
+            <div className="flex-1 h-px" style={{ backgroundColor: "var(--border)" }} />
+          </div>
+
+          {/* Magic Link Form */}
+          {!sent ? (
+            <div>
+              <label
+                className="block text-xs font-medium mb-2 uppercase tracking-wider"
+                style={{ color: "var(--muted)" }}
+              >
+                Sign in with email
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="flex-1 px-4 py-3 rounded-lg text-sm outline-none transition-colors"
+                  style={{
+                    backgroundColor: "var(--navy-light)",
+                    border: "1px solid var(--border)",
+                    color: "var(--foreground)",
+                  }}
+                  onFocus={(e) =>
+                    (e.currentTarget.style.borderColor = "var(--gold)")
+                  }
+                  onBlur={(e) =>
+                    (e.currentTarget.style.borderColor = "var(--border)")
+                  }
+                  onKeyDown={(e) => e.key === "Enter" && handleMagicLink()}
+                />
+                <button
+                  onClick={handleMagicLink}
+                  disabled={sending || !email.trim()}
+                  className="px-5 py-3 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    backgroundColor: sending || !email.trim() ? "var(--navy-light)" : "var(--surface-hover)",
+                    color: sending || !email.trim() ? "var(--muted)" : "var(--foreground)",
+                    border: "1px solid var(--border)",
+                    cursor: sending || !email.trim() ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {sending ? "..." : "Send link"}
+                </button>
+              </div>
+              {error && (
+                <p className="text-xs mt-2" style={{ color: "var(--danger)" }}>
+                  {error}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div
+              className="rounded-xl p-4 text-center"
+              style={{
+                backgroundColor: "rgba(48, 164, 108, 0.08)",
+                border: "1px solid rgba(48, 164, 108, 0.2)",
+              }}
+            >
+              <p className="text-sm font-medium" style={{ color: "var(--success)" }}>
+                ✓ Login link sent!
+              </p>
+              <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
+                Check your email and click the link to sign in.
+              </p>
+              <button
+                onClick={() => { setSent(false); setEmail(""); }}
+                className="text-xs mt-3 underline"
+                style={{ color: "var(--gold)" }}
+              >
+                Send another link
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Footer text */}
