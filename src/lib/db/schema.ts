@@ -6,6 +6,10 @@ export const users = sqliteTable("users", {
   name: text("name").notNull(),
   image: text("image"),
   phone: text("phone"),
+  avatarColor: text("avatar_color"),
+  profileComplete: integer("profile_complete", { mode: "boolean" })
+    .notNull()
+    .$defaultFn(() => false),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
@@ -70,5 +74,6 @@ export const predictions = sqliteTable(
 );
 
 export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
 export type Prediction = typeof predictions.$inferSelect;
 export type NewPrediction = typeof predictions.$inferInsert;

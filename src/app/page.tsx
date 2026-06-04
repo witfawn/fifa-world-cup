@@ -2,20 +2,50 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
+import Avatar from "@/components/Avatar";
+
+interface Profile {
+  id: string;
+  email: string;
+  name: string;
+  image: string | null;
+  phone: string | null;
+  avatarColor: string | null;
+  profileComplete: boolean;
+}
 
 export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
+      return;
+    }
+    if (status === "authenticated") {
+      fetch("/api/profile")
+        .then((res) => res.json())
+        .then((data: Profile) => {
+          setProfile(data);
+          setLoading(false);
+          // Redirect to profile if not complete
+          if (!data.profileComplete) {
+            router.push("/profile");
+          }
+        })
+        .catch(() => {
+          setLoading(false);
+          // No profile yet — go to profile page
+          router.push("/profile");
+        });
     }
   }, [status, router]);
 
-  if (status === "loading") {
+  if (status === "loading" || loading) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -34,11 +64,9 @@ export default function HomePage() {
     );
   }
 
-  if (!session) {
-    return null;
-  }
+  if (!session || !profile) return null;
 
-  const firstName = session.user?.name?.split(" ")[0] || "there";
+  const firstName = profile.name?.split(" ")[0] || "there";
 
   return (
     <div
@@ -95,21 +123,21 @@ export default function HomePage() {
           <div className="flex items-center gap-4">
             {/* User info */}
             <div className="flex items-center gap-3">
-              {session.user?.image && (
-                <Image
-                  src={session.user.image}
-                  alt="Avatar"
-                  width={32}
-                  height={32}
-                  className="rounded-full ring-2 ring-gray-700"
-                />
-              )}
               <span
                 className="text-sm font-medium hidden sm:inline"
                 style={{ color: "var(--foreground)" }}
               >
-                {session.user?.name}
+                {profile.name}
               </span>
+              {/* Clickable avatar */}
+              <Avatar
+                image={profile.image}
+                name={profile.name}
+                color={profile.avatarColor}
+                size={32}
+                className="ring-2 ring-gray-700"
+                onClick={() => router.push("/profile")}
+              />
             </div>
 
             {/* Sign out */}
@@ -135,7 +163,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Main content - Profile placeholder */}
+      {/* Main content */}
       <main className="max-w-4xl mx-auto px-6 py-12">
         <div
           className="rounded-2xl p-8"
@@ -165,43 +193,13 @@ export default function HomePage() {
           >
             <div className="flex items-center gap-5">
               {/* Profile picture */}
-              <div className="relative group">
-                {session.user?.image ? (
-                  <Image
-                    src={session.user.image}
-                    alt="Profile"
-                    width={80}
-                    height={80}
-                    className="rounded-full"
-                  />
-                ) : (
-                  <div
-                    className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold"
-                    style={{
-                      backgroundColor: "rgba(212, 168, 67, 0.15)",
-                      color: "var(--gold)",
-                    }}
-                  >
-                    {firstName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div
-                  className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                  style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="2"
-                  >
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
-                </div>
-              </div>
+              <Avatar
+                image={profile.image}
+                name={profile.name}
+                color={profile.avatarColor}
+                size={80}
+                onClick={() => router.push("/profile")}
+              />
 
               {/* Info */}
               <div className="space-y-1">
@@ -209,16 +207,16 @@ export default function HomePage() {
                   className="font-semibold"
                   style={{ color: "var(--foreground)" }}
                 >
-                  {session.user?.name}
+                  {profile.name}
                 </p>
                 <p className="text-sm" style={{ color: "var(--muted)" }}>
-                  {session.user?.email}
+                  {profile.email}
                 </p>
                 <p
                   className="text-xs"
                   style={{ color: "var(--muted)", opacity: 0.6 }}
                 >
-                  Phone: Not set
+                  {profile.phone || "Phone: Not set"}
                 </p>
               </div>
             </div>
