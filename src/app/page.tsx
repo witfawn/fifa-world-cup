@@ -32,15 +32,9 @@ export default function HomePage() {
         .then((data: Profile) => {
           setProfile(data);
           setLoading(false);
-          // Redirect to profile if not complete
-          if (!data.profileComplete) {
-            router.push("/profile");
-          }
         })
         .catch(() => {
           setLoading(false);
-          // No profile yet — go to profile page
-          router.push("/profile");
         });
     }
   }, [status, router]);
@@ -121,24 +115,15 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* User info */}
-            <div className="flex items-center gap-3">
-              <span
-                className="text-sm font-medium hidden sm:inline"
-                style={{ color: "var(--foreground)" }}
-              >
-                {profile.name}
-              </span>
-              {/* Clickable avatar */}
-              <Avatar
-                image={profile.image}
-                name={profile.name}
-                color={profile.avatarColor}
-                size={32}
-                className="ring-2 ring-gray-700"
-                onClick={() => router.push("/profile")}
-              />
-            </div>
+            {/* Clickable avatar → profile */}
+            <Avatar
+              image={profile.image}
+              name={profile.name}
+              color={profile.avatarColor}
+              size={32}
+              className="ring-2 ring-gray-700"
+              onClick={() => router.push("/profile")}
+            />
 
             {/* Sign out */}
             <button
@@ -172,55 +157,40 @@ export default function HomePage() {
             border: "1px solid var(--border)",
           }}
         >
-          {/* Greeting */}
           <h1
             className="text-3xl font-bold mb-2"
             style={{ color: "var(--foreground)" }}
           >
-            Hello, {firstName}
+            Hello, {firstName} 👋
           </h1>
           <p className="text-sm" style={{ color: "var(--muted)" }}>
             Welcome to Bangers FIFA World Cup 2026.
           </p>
 
-          {/* Profile preview card */}
-          <div
-            className="mt-8 rounded-xl p-6"
-            style={{
-              backgroundColor: "var(--navy-light)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <div className="flex items-center gap-5">
-              {/* Profile picture */}
-              <Avatar
-                image={profile.image}
-                name={profile.name}
-                color={profile.avatarColor}
-                size={80}
+          {/* Profile nudge if incomplete */}
+          {!profile.profileComplete && (
+            <div
+              className="mt-6 rounded-xl p-4 flex items-center justify-between"
+              style={{
+                backgroundColor: "rgba(212, 168, 67, 0.08)",
+                border: "1px solid rgba(212, 168, 67, 0.2)",
+              }}
+            >
+              <p className="text-sm" style={{ color: "var(--gold)" }}>
+                Complete your profile to get started!
+              </p>
+              <button
                 onClick={() => router.push("/profile")}
-              />
-
-              {/* Info */}
-              <div className="space-y-1">
-                <p
-                  className="font-semibold"
-                  style={{ color: "var(--foreground)" }}
-                >
-                  {profile.name}
-                </p>
-                <p className="text-sm" style={{ color: "var(--muted)" }}>
-                  {profile.email}
-                </p>
-                <p
-                  className="text-xs"
-                  style={{ color: "var(--muted)", opacity: 0.6 }}
-                >
-                  {profile.phone || "Phone: Not set"}
-                </p>
-              </div>
+                className="px-4 py-2 text-xs font-semibold rounded-lg transition-colors"
+                style={{
+                  backgroundColor: "var(--gold)",
+                  color: "var(--background)",
+                }}
+              >
+                Set up profile
+              </button>
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>

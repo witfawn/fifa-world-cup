@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import Avatar from "@/components/Avatar";
@@ -146,30 +146,51 @@ export default function ProfilePage() {
       style={{ backgroundColor: "var(--background)" }}
     >
       <div className="max-w-lg mx-auto px-6 py-12">
-        {/* Back button */}
-        <button
-          onClick={() => router.push("/")}
-          className="flex items-center gap-2 text-sm mb-8 transition-colors"
-          style={{ color: "var(--muted)" }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.color = "var(--gold)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.color = "var(--muted)")
-          }
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+        {/* Nav buttons */}
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={() => router.push("/")}
+            className="flex items-center gap-2 text-sm transition-colors"
+            style={{ color: "var(--muted)" }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--gold)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--muted)")
+            }
           >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-          Back to home
-        </button>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Home
+          </button>
+
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="px-4 py-2 text-xs font-medium rounded-lg transition-colors"
+            style={{
+              color: "var(--muted)",
+              border: "1px solid var(--border)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--surface-hover)";
+              e.currentTarget.style.color = "var(--foreground)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "var(--muted)";
+            }}
+          >
+            Sign out
+          </button>
+        </div>
 
         <div
           className="rounded-2xl p-8"
