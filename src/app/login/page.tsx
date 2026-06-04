@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { FifaTrophy } from "@/components/FifaTrophy";
 
 export default function LoginPage() {
   const { status } = useSession();
@@ -66,23 +67,7 @@ export default function LoginPage() {
             <div className="mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center"
               style={{ backgroundColor: "rgba(212, 168, 67, 0.12)" }}
             >
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--gold)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-                <path d="M4 22h16" />
-                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-              </svg>
+              <FifaTrophy size={32} />
             </div>
 
             <h1
