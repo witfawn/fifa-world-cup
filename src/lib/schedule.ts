@@ -110,7 +110,8 @@ export function formatKickoff(dateStr: string, timeStr: string): string {
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ];
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const kickoff = parseKickoff(dateStr, timeStr);
-  const dayName = dayNames[kickoff.getUTCDay()];
+  const [year] = dateStr.split("-").map(Number);
+  const dateObj = new Date(Date.UTC(year, month - 1, day));
+  const dayName = dayNames[dateObj.getUTCDay()];
   return `${dayName}, ${monthNames[month - 1]} ${day} · ${timeStr} PT`;
 }
