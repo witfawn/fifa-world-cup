@@ -64,10 +64,10 @@ export default function LoginPage() {
           {/* Logo / Brand */}
           <div className="text-center mb-8">
             {/* Trophy icon */}
-            <div className="mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center"
+            <div className="mx-auto mb-4 w-24 h-24 rounded-full flex items-center justify-center overflow-hidden"
               style={{ backgroundColor: "rgba(212, 168, 67, 0.12)" }}
             >
-              <FifaTrophy size={32} />
+              <FifaTrophy size={80} />
             </div>
 
             <h1
