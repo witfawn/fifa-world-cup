@@ -11,72 +11,61 @@ export default function ScoreInput({
   onChange,
   disabled,
 }: ScoreInputProps) {
-  const currentValue = value ?? 0;
   const hasValue = value !== null && value !== undefined;
+  const currentValue = value ?? 0;
 
-  const increment = () => {
+  const handleTap = () => {
     if (disabled) return;
-    const newVal = Math.min(currentValue + 1, 20);
-    onChange(newVal);
-  };
-
-  const decrement = () => {
-    if (disabled) return;
-    if (currentValue <= 0) {
-      onChange(null);
-    } else {
-      onChange(currentValue - 1);
+    if (!hasValue) {
+      onChange(1);
+    } else if (currentValue < 20) {
+      onChange(currentValue + 1);
     }
   };
 
-  return (
-    <div className="flex items-center gap-1">
-      {/* Minus button */}
-      <button
-        onClick={decrement}
-        disabled={disabled || (!hasValue && currentValue === 0)}
-        className="w-8 h-10 rounded-lg flex items-center justify-center text-lg font-bold transition-all"
-        style={{
-          backgroundColor: disabled ? "var(--navy)" : "var(--navy-light)",
-          border: "2px solid var(--border)",
-          color: disabled ? "var(--muted)" : "var(--foreground)",
-          cursor: disabled ? "not-allowed" : "pointer",
-          opacity: disabled ? 0.5 : 1,
-        }}
-      >
-        −
-      </button>
+  const handleReset = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (disabled) return;
+    onChange(null);
+  };
 
-      {/* Score display */}
-      <div
-        className="w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold"
+  return (
+    <div className="relative">
+      {/* Score display - tappable */}
+      <button
+        onClick={handleTap}
+        disabled={disabled}
+        className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all active:scale-95"
         style={{
           backgroundColor: disabled ? "var(--navy)" : "var(--navy-light)",
           border: hasValue
             ? "2px solid var(--gold)"
             : "2px solid var(--border)",
-          color: disabled ? "var(--muted)" : "var(--foreground)",
-          opacity: disabled ? 0.5 : 1,
-        }}
-      >
-        {hasValue ? currentValue : "—"}
-      </div>
-
-      {/* Plus button */}
-      <button
-        onClick={increment}
-        disabled={disabled}
-        className="w-8 h-10 rounded-lg flex items-center justify-center text-lg font-bold transition-all"
-        style={{
-          backgroundColor: disabled ? "var(--navy)" : "var(--navy-light)",
-          border: "2px solid var(--border)",
-          color: disabled ? "var(--muted)" : "var(--foreground)",
+          color: disabled
+            ? "var(--muted)"
+            : hasValue
+            ? "var(--gold)"
+            : "var(--muted)",
           cursor: disabled ? "not-allowed" : "pointer",
           opacity: disabled ? 0.5 : 1,
         }}
       >
-        +
+        {hasValue ? currentValue : "—"}
       </button>
+
+      {/* Small reset button when value is set */}
+      {hasValue && !disabled && (
+        <button
+          onClick={handleReset}
+          className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
+          style={{
+            backgroundColor: "var(--danger)",
+            color: "white",
+          }}
+        >
+          ×
+        </button>
+      )}
     </div>
   );
 }

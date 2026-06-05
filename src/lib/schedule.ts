@@ -87,15 +87,17 @@ export function getTimeUntilKickoff(dateStr: string, timeStr: string): number {
   return kickoff.getTime() - Date.now();
 }
 
-/** Format remaining time as "2h 15m" or "45m" or "LIVE" */
+/** Format remaining time as "2d 5h", "2h 15m", "45m", or "Started" */
 export function formatCountdown(dateStr: string, timeStr: string): string {
   const remaining = getTimeUntilKickoff(dateStr, timeStr);
   if (remaining <= 0) return "Started";
 
   const totalMinutes = Math.floor(remaining / (1000 * 60));
-  const hours = Math.floor(totalMinutes / 60);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
   const minutes = totalMinutes % 60;
 
+  if (days > 0) return `${days}d ${hours}h`;
   if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
 }

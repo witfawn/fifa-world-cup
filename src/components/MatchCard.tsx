@@ -59,18 +59,19 @@ export default function MatchCard({ match, prediction, onSave }: MatchCardProps)
 
   // Shorten team names for mobile
   const shortenName = (name: string): string => {
-    if (name === "Bosnia-Herzegovina") return "Bosnia";
-    if (name === "United States") return "USA";
-    if (name === "South Korea") return "S. Korea";
-    if (name === "South Africa") return "S. Africa";
-    if (name === "Cape Verde") return "Cape Verde";
-    if (name === "Congo DR") return "DR Congo";
-    if (name === "Saudi Arabia") return "Saudi Arabia";
-    if (name === "New Zealand") return "New Zealand";
-    if (name === "Ivory Coast") return "Ivory Coast";
-    if (name === "Saudi Arabia") return "Saudi Arabia";
-    if (name.length > 12) return name.split(" ").pop()!;
-    return name;
+    const shortNames: Record<string, string> = {
+      "Bosnia-Herzegovina": "Bosnia",
+      "United States": "USA",
+      "South Korea": "S. Korea",
+      "South Africa": "S. Africa",
+      "Cape Verde": "Cape Verde",
+      "Congo DR": "DR Congo",
+      "Saudi Arabia": "Saudi",
+      "New Zealand": "New Zealand",
+      "Ivory Coast": "Ivory Coast",
+      "Curaçao": "Curaçao",
+    };
+    return shortNames[name] || (name.length > 10 ? name.split(" ").pop()! : name);
   };
 
   const homeShort = shortenName(match.home);
