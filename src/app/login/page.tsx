@@ -95,8 +95,14 @@ export default function LoginPage() {
 
           <a
             href="/rules"
-            className="block text-center text-xs mt-2 mb-2 underline"
-            style={{ color: "var(--gold)" }}
+            className="block text-center text-xs font-medium py-2.5 rounded-lg transition-all"
+            style={{
+              backgroundColor: "rgba(212, 168, 67, 0.08)",
+              border: "1px solid rgba(212, 168, 67, 0.2)",
+              color: "var(--gold)",
+              marginTop: "4px",
+              marginBottom: "4px",
+            }}
           >
             📋 How to Play
           </a>
@@ -140,7 +146,7 @@ export default function LoginPage() {
 
           {/* Magic Link Form */}
           {!sent ? (
-            <div>
+            <div className="w-full">
               <label
                 className="block text-xs font-medium mb-2 uppercase tracking-wider"
                 style={{ color: "var(--muted)" }}
