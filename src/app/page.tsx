@@ -89,13 +89,7 @@ export default function HomePage() {
               className="font-semibold text-sm"
               style={{ color: "var(--foreground)" }}
             >
-              Bangers
-            </span>
-            <span
-              className="text-[10px] font-medium tracking-wider uppercase hidden sm:inline"
-              style={{ color: "var(--gold)" }}
-            >
-              FIFA World Cup
+              Bangers WC 2026
             </span>
           </div>
 
@@ -111,12 +105,12 @@ export default function HomePage() {
             />
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-[11px] font-medium transition-colors"
+              className="text-[10px] font-medium transition-colors leading-tight text-center"
               style={{ color: "var(--muted)" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "var(--foreground)")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}
             >
-              Sign out
+              Sign<br />out
             </button>
           </div>
         </div>
