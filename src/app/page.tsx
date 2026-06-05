@@ -464,6 +464,48 @@ export default function HomePage() {
             </div>
           </div>
         )}
+
+        {/* How to Play link */}
+        <div
+          className="rounded-2xl p-4 mt-4"
+          style={{
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <button
+            onClick={() => router.push("/rules")}
+            className="w-full flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-lg">📋</span>
+              <div className="text-left">
+                <div
+                  className="text-sm font-medium"
+                  style={{ color: "var(--foreground)" }}
+                >
+                  How to Play
+                </div>
+                <div
+                  className="text-xs"
+                  style={{ color: "var(--muted)" }}
+                >
+                  Scoring rules, tips, and instructions
+                </div>
+              </div>
+            </div>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--muted)"
+              strokeWidth="2"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </div>
       </main>
 
       <BottomNav />

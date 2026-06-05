@@ -1,0 +1,181 @@
+"use client";
+
+import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
+
+export default function RulesPage() {
+  return (
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: "var(--background)" }}
+    >
+      <Header />
+
+      <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
+        <h1
+          className="text-2xl font-bold mb-2"
+          style={{ color: "var(--foreground)" }}
+        >
+          📋 How to Play
+        </h1>
+        <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>
+          Predict match scores for the FIFA World Cup 2026 and compete with your friends.
+        </p>
+
+        {/* Getting Started */}
+        <Section title="🚀 Getting Started">
+          <Step number={1} text="Log in with Google or email" />
+          <Step number={2} text="Go to the Predict tab" />
+          <Step number={3} text="Pick scores for each match by tapping the score boxes" />
+          <Step number={4} text="Your picks save automatically — come back anytime to change them" />
+        </Section>
+
+        {/* Group Stage */}
+        <Section title="⚽ Group Stage Scoring">
+          <p className="text-sm mb-3" style={{ color: "var(--muted)" }}>
+            12 groups of 4 teams. Each team plays 3 matches. You predict the score for all 72 group stage games.
+          </p>
+          <ScoringRow points="10 pts" label="Exact score" example="You said 2-1, actual was 2-1" />
+          <ScoringRow points="7 pts" label="Correct goal difference" example="You said 3-1 (diff +2), actual was 2-0 (diff +2)" />
+          <ScoringRow points="5 pts" label="Correct winner" example="You said France wins, France won 3-0" />
+          <ScoringRow points="0 pts" label="No match" example="You said France wins, game ended in a tie" />
+          <Note text="Ties are valid predictions in group stage. If you predict a tie and it is a tie, you get at least 7 pts (goal difference is always 0)." />
+        </Section>
+
+        {/* Knockout Stage */}
+        <Section title="🏆 Knockout Stage Scoring">
+          <p className="text-sm mb-3" style={{ color: "var(--muted)" }}>
+            From Round of 32 onward. You predict after the group stage ends when the bracket is set.
+          </p>
+          <ScoringRow points="+10 pts" label="Correct winner" example="You said Brazil advances, Brazil won (even via penalties)" />
+          <ScoringRow points="+6 pts" label="Exact score" example="You said 1-1, actual was 1-1 after extra time" />
+          <ScoringRow points="+4 pts" label="Correct winner + goal diff" example="You said France 2-0, actual was France 3-1 (winner + diff correct)" />
+          <ScoringRow points="0 pts" label="No match" example="You did not pick this game" />
+          <Note text="Score = result after 90 min (or 120 min if extra time). Penalty shootout decides the winner but does not count as goals." />
+        </Section>
+
+        {/* Locking */}
+        <Section title="🔒 Locking Rules">
+          <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>
+            Each match locks <strong style={{ color: "var(--foreground)" }}>5 minutes before kickoff</strong>. Once locked:
+          </p>
+          <ul className="text-sm space-y-1.5 ml-4" style={{ color: "var(--muted)" }}>
+            <li>• No changes allowed</li>
+            <li>• If you did not pick, you get 0 points</li>
+            <li>• If you picked, you are eligible for points based on accuracy</li>
+          </ul>
+        </Section>
+
+        {/* Tips */}
+        <Section title="💡 Tips">
+          <ul className="text-sm space-y-2" style={{ color: "var(--muted)" }}>
+            <li>• <strong style={{ color: "var(--foreground)" }}>Tap the score box</strong> to set a score (0, 1, 2, ...)</li>
+            <li>• <strong style={{ color: "var(--foreground)" }}>Tap the red ×</strong> to clear a pick</li>
+            <li>• You can change picks anytime before lock</li>
+            <li>• Skip games and come back later — no penalty</li>
+            <li>• Use the <strong style={{ color: "var(--foreground)" }}>Upcoming</strong> view to see what is next</li>
+            <li>• Use <strong style={{ color: "var(--foreground)" }}>By Group</strong> to see all 6 games for a group</li>
+          </ul>
+        </Section>
+      </main>
+
+      <BottomNav />
+    </div>
+  );
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="rounded-2xl p-5 mb-4"
+      style={{
+        backgroundColor: "var(--surface)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <h2
+        className="text-sm font-bold uppercase tracking-wider mb-4"
+        style={{ color: "var(--gold)" }}
+      >
+        {title}
+      </h2>
+      {children}
+    </div>
+  );
+}
+
+function Step({ number, text }: { number: number; text: string }) {
+  return (
+    <div className="flex items-start gap-3 mb-3">
+      <div
+        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+        style={{
+          backgroundColor: "rgba(212, 168, 67, 0.15)",
+          color: "var(--gold)",
+        }}
+      >
+        {number}
+      </div>
+      <p className="text-sm" style={{ color: "var(--foreground)" }}>
+        {text}
+      </p>
+    </div>
+  );
+}
+
+function ScoringRow({
+  points,
+  label,
+  example,
+}: {
+  points: string;
+  label: string;
+  example: string;
+}) {
+  return (
+    <div
+      className="py-2.5"
+      style={{ borderBottom: "1px solid var(--border)" }}
+    >
+      <div className="flex items-center gap-3 mb-1">
+        <span
+          className="text-sm font-bold w-16 flex-shrink-0"
+          style={{ color: "var(--gold)" }}
+        >
+          {points}
+        </span>
+        <span
+          className="text-sm font-medium"
+          style={{ color: "var(--foreground)" }}
+        >
+          {label}
+        </span>
+      </div>
+      <p className="text-xs ml-16" style={{ color: "var(--muted)" }}>
+        {example}
+      </p>
+    </div>
+  );
+}
+
+function Note({ text }: { text: string }) {
+  return (
+    <div
+      className="mt-3 p-3 rounded-lg"
+      style={{
+        backgroundColor: "rgba(212, 168, 67, 0.08)",
+        border: "1px solid rgba(212, 168, 67, 0.15)",
+      }}
+    >
+      <p className="text-xs" style={{ color: "var(--gold)" }}>
+        💡 {text}
+      </p>
+    </div>
+  );
+}
