@@ -85,6 +85,66 @@ export default function RulesPage() {
           </ul>
         </Section>
 
+        {/* Prizes */}
+        <Section title="💰 Prizes">
+          <p className="text-sm mb-3" style={{ color: "var(--muted)" }}>
+            $100 entry fee per player. Prize pool scales with the number of participants.
+          </p>
+          <div className="overflow-x-auto -mx-2 px-2">
+            <table className="w-full text-xs" style={{ minWidth: 420 }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  <th className="text-left py-2 pr-2 font-semibold" style={{ color: "var(--muted)" }}>
+                    Place
+                  </th>
+                  <th className="text-center py-2 px-2 font-semibold" style={{ color: "var(--muted)" }}>
+                    &lt;10
+                  </th>
+                  <th className="text-center py-2 px-2 font-semibold" style={{ color: "var(--muted)" }}>
+                    10–15
+                  </th>
+                  <th className="text-center py-2 px-2 font-semibold" style={{ color: "var(--muted)" }}>
+                    16–20
+                  </th>
+                  <th className="text-center py-2 pl-2 font-semibold" style={{ color: "var(--muted)" }}>
+                    20+
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td className="py-2 pr-2 font-medium" style={{ color: "var(--foreground)" }}>🥇 1st</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--gold)" }}>100%</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--gold)" }}>70%</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--gold)" }}>65%</td>
+                  <td className="text-center py-2 pl-2" style={{ color: "var(--gold)" }}>60%</td>
+                </tr>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td className="py-2 pr-2 font-medium" style={{ color: "var(--foreground)" }}>🥈 2nd</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--muted)" }}>—</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--gold)" }}>30%</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--gold)" }}>25%</td>
+                  <td className="text-center py-2 pl-2" style={{ color: "var(--gold)" }}>25%</td>
+                </tr>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td className="py-2 pr-2 font-medium" style={{ color: "var(--foreground)" }}>🥉 3rd</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--muted)" }}>—</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--muted)" }}>—</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--gold)" }}>10%</td>
+                  <td className="text-center py-2 pl-2" style={{ color: "var(--gold)" }}>10%</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-2 font-medium" style={{ color: "var(--foreground)" }}>4th</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--muted)" }}>—</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--muted)" }}>—</td>
+                  <td className="text-center py-2 px-2" style={{ color: "var(--muted)" }}>—</td>
+                  <td className="text-center py-2 pl-2" style={{ color: "var(--gold)" }}>5%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Section>
+
         {/* Tips */}
         <Section title="💡 Tips">
           <ul className="text-sm space-y-2" style={{ color: "var(--muted)" }}>
