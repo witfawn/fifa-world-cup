@@ -215,38 +215,118 @@ export default function PaymentPage() {
             🏆 Prize Pool
           </h2>
           <p className="text-xs mb-4" style={{ color: 'var(--muted)' }}>
-            {playerCount} players × ${ENTRY_FEE} = ${pot.toLocaleString()} pot
+            Current: {playerCount} players · ${pot.toLocaleString()} pot
           </p>
 
-          <div className="space-y-2">
-            {tiers.map((tier) => (
-              <div
-                key={tier.place}
-                className="flex items-center justify-between py-2 px-3 rounded-lg"
-                style={{ backgroundColor: 'var(--navy-light)' }}
-              >
-                <span
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  {tier.place}
-                </span>
-                <div className="text-right">
-                  <span
-                    className="text-sm font-bold"
-                    style={{ color: 'var(--gold)' }}
-                  >
+          {/* Current tier highlight */}
+          <div
+            className="rounded-lg p-3 mb-4"
+            style={{
+              backgroundColor: 'rgba(212, 168, 67, 0.08)',
+              border: '1px solid rgba(212, 168, 67, 0.2)',
+            }}
+          >
+            <p className="text-xs font-semibold mb-2" style={{ color: 'var(--gold)' }}>
+              Current payout ({playerCount} players)
+            </p>
+            <div className="space-y-1">
+              {tiers.map((tier) => (
+                <div key={tier.place} className="flex justify-between">
+                  <span className="text-sm" style={{ color: 'var(--foreground)' }}>
+                    {tier.place}
+                  </span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>
                     ${tier.amount.toLocaleString()}
                   </span>
-                  <span
-                    className="text-xs ml-1.5"
-                    style={{ color: 'var(--muted)' }}
-                  >
-                    ({tier.pct}%)
-                  </span>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          {/* Full payout table */}
+          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--muted)' }}>
+            Payout by bracket
+          </p>
+          <div className="overflow-x-auto -mx-2 px-2">
+            <table className="w-full text-xs" style={{ minWidth: 480 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <th className="text-left py-2 pr-2 font-semibold" style={{ color: 'var(--muted)' }}>
+                    Place
+                  </th>
+                  <th className="text-center py-2 px-2 font-semibold" style={{ color: 'var(--muted)' }}>
+                    &lt;10
+                  </th>
+                  <th className="text-center py-2 px-2 font-semibold" style={{ color: 'var(--muted)' }}>
+                    10–15
+                  </th>
+                  <th className="text-center py-2 px-2 font-semibold" style={{ color: 'var(--muted)' }}>
+                    16–20
+                  </th>
+                  <th className="text-center py-2 pl-2 font-semibold" style={{ color: 'var(--muted)' }}>
+                    20+
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td className="py-2 pr-2 font-medium" style={{ color: 'var(--foreground)' }}>
+                    🥇 1st
+                  </td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--gold)' }}>
+                    100%
+                  </td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--gold)' }}>
+                    70%
+                  </td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--gold)' }}>
+                    65%
+                  </td>
+                  <td className="text-center py-2 pl-2" style={{ color: 'var(--gold)' }}>
+                    60%
+                  </td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td className="py-2 pr-2 font-medium" style={{ color: 'var(--foreground)' }}>
+                    🥈 2nd
+                  </td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--muted)' }}>—</td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--gold)' }}>
+                    30%
+                  </td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--gold)' }}>
+                    25%
+                  </td>
+                  <td className="text-center py-2 pl-2" style={{ color: 'var(--gold)' }}>
+                    25%
+                  </td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td className="py-2 pr-2 font-medium" style={{ color: 'var(--foreground)' }}>
+                    🥉 3rd
+                  </td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--muted)' }}>—</td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--muted)' }}>—</td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--gold)' }}>
+                    10%
+                  </td>
+                  <td className="text-center py-2 pl-2" style={{ color: 'var(--gold)' }}>
+                    10%
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-2 font-medium" style={{ color: 'var(--foreground)' }}>
+                    4th
+                  </td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--muted)' }}>—</td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--muted)' }}>—</td>
+                  <td className="text-center py-2 px-2" style={{ color: 'var(--muted)' }}>—</td>
+                  <td className="text-center py-2 pl-2" style={{ color: 'var(--gold)' }}>
+                    5%
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
