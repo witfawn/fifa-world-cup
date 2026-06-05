@@ -3,6 +3,8 @@
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
+import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
 import Avatar from "@/components/Avatar";
 
 const AVATAR_COLORS = [
@@ -145,44 +147,9 @@ export default function ProfilePage() {
       className="min-h-screen"
       style={{ backgroundColor: "var(--background)" }}
     >
-      <div className="max-w-lg mx-auto px-4 py-8">
-        {/* Nav buttons */}
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => router.push("/")}
-            className="flex items-center gap-1.5 text-sm transition-colors"
-            style={{ color: "var(--muted)" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.color = "var(--gold)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = "var(--muted)")
-            }
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            Home
-          </button>
+      <Header />
 
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="text-[11px] font-medium transition-colors"
-            style={{ color: "var(--muted)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--foreground)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}
-          >
-            Sign out
-          </button>
-        </div>
-
+      <div className="max-w-lg mx-auto px-4 py-6 pb-24">
         <div
           className="rounded-2xl p-6"
           style={{
@@ -244,12 +211,6 @@ export default function ProfilePage() {
               onClick={() => fileInputRef.current?.click()}
               className="text-xs font-medium mb-4 transition-colors"
               style={{ color: "var(--gold)" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "var(--gold-dark)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "var(--gold)")
-              }
             >
               Upload photo
             </button>
@@ -383,7 +344,62 @@ export default function ProfilePage() {
             {saving ? "Saving..." : saved ? "✓ Saved!" : "Save Profile"}
           </button>
         </div>
+
+        {/* Account section */}
+        <div
+          className="rounded-2xl p-5 mt-4"
+          style={{
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <h2
+            className="text-xs font-bold uppercase tracking-wider mb-3"
+            style={{ color: "var(--muted)" }}
+          >
+            Account
+          </h2>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm" style={{ color: "var(--muted)" }}>
+                Email
+              </span>
+              <span
+                className="text-sm font-medium"
+                style={{ color: "var(--foreground)" }}
+              >
+                {session.user?.email || "—"}
+              </span>
+            </div>
+            {phone && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm" style={{ color: "var(--muted)" }}>
+                  Phone
+                </span>
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: "var(--foreground)" }}
+                >
+                  {phone}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sign out - less prominent, at bottom */}
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="text-sm font-medium transition-colors px-4 py-2"
+            style={{ color: "var(--muted)" }}
+          >
+            Sign out
+          </button>
+        </div>
       </div>
+
+      <BottomNav />
     </div>
   );
 }

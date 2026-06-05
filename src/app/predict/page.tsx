@@ -1,10 +1,9 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { FifaTrophy } from "@/components/FifaTrophy";
-import Avatar from "@/components/Avatar";
+import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
 import ProgressBar from "@/components/ProgressBar";
 import GroupTabs from "@/components/GroupTabs";
 import MatchCard from "@/components/MatchCard";
@@ -20,21 +19,9 @@ import type { MatchPrediction as Prediction } from "@/lib/db/schema";
 const TOTAL_MATCHES = 72;
 type ViewMode = "upcoming" | "group" | "all";
 
-interface Profile {
-  id: string;
-  email: string;
-  name: string;
-  image: string | null;
-  phone: string | null;
-  avatarColor: string | null;
-  profileComplete: boolean;
-}
-
 export default function PredictPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
 
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [predictions, setPredictions] = useState<Record<number, Prediction>>({});
   const [viewMode, setViewMode] = useState<ViewMode>("upcoming");
   const [selectedGroup, setSelectedGroup] = useState("A");
@@ -47,16 +34,6 @@ export default function PredictPage() {
   // All matches
   const allMatches = getAllMatches();
   const groups = getAllGroups();
-
-  // Fetch profile
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetch("/api/profile")
-        .then((res) => res.json())
-        .then((data: Profile) => setProfile(data))
-        .catch(() => {});
-    }
-  }, [status]);
 
   // Fetch existing predictions
   useEffect(() => {
@@ -178,50 +155,18 @@ export default function PredictPage() {
       className="min-h-screen"
       style={{ backgroundColor: "var(--background)" }}
     >
-      {/* Header */}
-      <header
-        className="border-b sticky top-0 z-50"
-        style={{
-          backgroundColor: "var(--navy)",
-          borderColor: "var(--border)",
-        }}
-      >
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.push("/")}
-              className="flex items-center gap-2"
-            >
-              <FifaTrophy size={28} />
-              <span
-                className="font-semibold text-sm"
-                style={{ color: "var(--foreground)" }}
-              >
-                Bangers WC 2026
-              </span>
-            </button>
-          </div>
-          <div className="flex items-center gap-3">
-            <span
-              className="text-xs font-bold"
-              style={{ color: "var(--gold)" }}
-            >
-              {pickedCount}/{TOTAL_MATCHES}
-            </span>
-            <Avatar
-              image={profile?.image}
-              name={profile?.name}
-              color={profile?.avatarColor}
-              size={32}
-              className="ring-2 ring-gray-700"
-              onClick={() => router.push("/profile")}
-            />
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Progress bar */}
       <div className="max-w-4xl mx-auto px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs font-medium" style={{ color: "var(--muted)" }}>
+            Games picked
+          </span>
+          <span className="text-xs font-bold" style={{ color: "var(--gold)" }}>
+            {pickedCount}/{TOTAL_MATCHES}
+          </span>
+        </div>
         <ProgressBar picked={pickedCount} total={TOTAL_MATCHES} />
       </div>
 
@@ -277,7 +222,7 @@ export default function PredictPage() {
       )}
 
       {/* Match list */}
-      <div className="max-w-4xl mx-auto px-4 pb-8">
+      <div className="max-w-4xl mx-auto px-4 pb-24">
         <div className="space-y-3">
           {viewMode === "all" ? (
             // Group by matchday
@@ -317,6 +262,8 @@ export default function PredictPage() {
           )}
         </div>
       </div>
+
+      <BottomNav />
     </div>
   );
 }
