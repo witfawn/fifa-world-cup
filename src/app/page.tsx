@@ -62,6 +62,7 @@ export default function HomePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [rank, setRank] = useState<number | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,10 +75,16 @@ export default function HomePage() {
         fetch("/api/profile").then((res) => res.json()),
         fetch("/api/predictions").then((res) => res.json()),
         fetch("/api/leaderboard").then((res) => res.json()),
+        fetch("/api/payment")
+          .then((res) => res.json())
+          .catch(() => ({ payment: null })),
       ])
-        .then(([profileData, predsData, leaderboardData]) => {
+        .then(([profileData, predsData, leaderboardData, paymentData]) => {
           setProfile(profileData);
           setPredictions(predsData);
+          if (paymentData?.payment?.status) {
+            setPaymentStatus(paymentData.payment.status);
+          }
           const currentUserId = (session?.user as { id: string })?.id;
           const entry = leaderboardData.leaderboard?.find(
             (e: LeaderboardEntry) => e.id === currentUserId
@@ -173,6 +180,36 @@ export default function HomePage() {
               }}
             >
               Set up profile
+            </button>
+          </div>
+        )}
+
+        {/* Payment nudge */}
+        {paymentStatus !== "confirmed" && (
+          <div
+            className="rounded-2xl p-4 mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+            style={{
+              backgroundColor: "rgba(239, 68, 68, 0.08)",
+              border: "1px solid rgba(239, 68, 68, 0.2)",
+            }}
+          >
+            <div>
+              <p className="text-sm font-medium" style={{ color: "#ef4444" }}>
+                💰 Payment required
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+                $100 entry fee · Predictions locked until paid
+              </p>
+            </div>
+            <button
+              onClick={() => router.push("/payment")}
+              className="px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+              style={{
+                backgroundColor: "#ef4444",
+                color: "#fff",
+              }}
+            >
+              Pay Now →
             </button>
           </div>
         )}
