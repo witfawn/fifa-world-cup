@@ -38,7 +38,8 @@ export default function RulesPage() {
           <ScoringRow points="10 pts" label="Exact score" example="You said 2-1, actual was 2-1" />
           <ScoringRow points="7 pts" label="Correct goal difference" example="You said 3-1 (diff +2), actual was 2-0 (diff +2)" />
           <ScoringRow points="5 pts" label="Correct winner" example="You said France wins, France won 3-0" />
-          <ScoringRow points="0 pts" label="No match" example="You said France wins, game ended in a tie" />
+          <ScoringRow points="1 pt" label="Participation" example="You picked a score — even if wrong, you get 1 point" />
+          <ScoringRow points="0 pts" label="No prediction" example="You did not pick this game" />
           <Note text="Ties are valid predictions in group stage. If you predict a tie and it is a tie, you get at least 7 pts (goal difference is always 0)." />
         </Section>
 
@@ -50,7 +51,8 @@ export default function RulesPage() {
           <ScoringRow points="+10 pts" label="Correct winner" example="You said Brazil advances, Brazil won (even via penalties)" />
           <ScoringRow points="+6 pts" label="Exact score" example="You said 1-1, actual was 1-1 after extra time" />
           <ScoringRow points="+4 pts" label="Correct winner + goal diff" example="You said France 2-0, actual was France 3-1 (winner + diff correct)" />
-          <ScoringRow points="0 pts" label="No match" example="You did not pick this game" />
+          <ScoringRow points="1 pt" label="Participation" example="You picked a score — even if wrong, you get 1 point" />
+          <ScoringRow points="0 pts" label="No prediction" example="You did not pick this game" />
           <Note text="Score = result after 90 min (or 120 min if extra time). Penalty shootout decides the winner but does not count as goals." />
         </Section>
 
@@ -62,7 +64,7 @@ export default function RulesPage() {
           <ul className="text-sm space-y-1.5 ml-4" style={{ color: "var(--muted)" }}>
             <li>• No changes allowed</li>
             <li>• If you did not pick, you get 0 points</li>
-            <li>• If you picked, you are eligible for points based on accuracy</li>
+            <li>• If you picked, you get at least 1 point (more if accurate)</li>
           </ul>
         </Section>
 
