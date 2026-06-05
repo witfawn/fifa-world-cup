@@ -105,3 +105,28 @@ export type Prediction = typeof predictions.$inferSelect;
 export type NewPrediction = typeof predictions.$inferInsert;
 export type MatchPrediction = typeof matchPredictions.$inferSelect;
 export type NewMatchPrediction = typeof matchPredictions.$inferInsert;
+
+// Payment tracking for entry fees
+export const payments = sqliteTable("payments", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  amountCents: integer("amount_cents").notNull(),
+  status: text("status", { enum: ["pending", "confirmed", "rejected"] })
+    .notNull()
+    .$defaultFn(() => "pending"),
+  venmoNote: text("venmo_note"), // user's Venmo confirmation/note
+  adminNotes: text("admin_notes"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export type Payment = typeof payments.$inferSelect;
+export type NewPayment = typeof payments.$inferInsert;

@@ -1,9 +1,12 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 
 export default function RulesPage() {
+  const { data: session } = useSession();
+
   return (
     <div
       className="min-h-screen"
@@ -19,16 +22,18 @@ export default function RulesPage() {
           >
             📋 How to Play
           </h1>
-          <a
-            href="/login"
-            className="text-xs font-medium px-3 py-1.5 rounded-lg"
-            style={{
-              backgroundColor: "rgba(212, 168, 67, 0.12)",
-              color: "var(--gold)",
-            }}
-          >
-            Log in →
-          </a>
+          {!session && (
+            <a
+              href="/login"
+              className="text-xs font-medium px-3 py-1.5 rounded-lg"
+              style={{
+                backgroundColor: "rgba(212, 168, 67, 0.12)",
+                color: "var(--gold)",
+              }}
+            >
+              Log in →
+            </a>
+          )}
         </div>
         <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>
           Predict match scores for the FIFA World Cup 2026 and compete with your friends.
