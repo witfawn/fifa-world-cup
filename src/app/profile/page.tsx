@@ -7,17 +7,6 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import Avatar from "@/components/Avatar";
 
-const AVATAR_COLORS = [
-  { name: "Gold", value: "#d4a843" },
-  { name: "Blue", value: "#3b82f6" },
-  { name: "Green", value: "#22c55e" },
-  { name: "Purple", value: "#a855f7" },
-  { name: "Pink", value: "#ec4899" },
-  { name: "Orange", value: "#f97316" },
-  { name: "Teal", value: "#14b8a6" },
-  { name: "Red", value: "#ef4444" },
-];
-
 interface Profile {
   id: string;
   email: string;
@@ -36,7 +25,6 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [image, setImage] = useState<string | null>(null);
-  const [avatarColor, setAvatarColor] = useState("#d4a843");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -54,7 +42,6 @@ export default function ProfilePage() {
           setName(data.name || "");
           setPhone(data.phone || "");
           setImage(data.image || null);
-          setAvatarColor(data.avatarColor || "#d4a843");
           setLoading(false);
         })
         .catch(() => {
@@ -113,7 +100,6 @@ export default function ProfilePage() {
         name,
         phone: phone || null,
         image,
-        avatarColor,
         profileComplete: true,
       }),
     });
@@ -173,7 +159,6 @@ export default function ProfilePage() {
               <Avatar
                 image={image}
                 name={name}
-                color={avatarColor}
                 size={120}
                 className="ring-4"
                 onClick={() => fileInputRef.current?.click()}
@@ -214,33 +199,6 @@ export default function ProfilePage() {
             >
               Upload photo
             </button>
-
-            {/* Color picker */}
-            <div className="flex items-center gap-2">
-              <span
-                className="text-xs mr-1"
-                style={{ color: "var(--muted)" }}
-              >
-                Avatar color:
-              </span>
-              {AVATAR_COLORS.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => setAvatarColor(c.value)}
-                  className="w-6 h-6 rounded-full transition-transform"
-                  style={{
-                    backgroundColor: c.value,
-                    border:
-                      avatarColor === c.value
-                        ? "2px solid white"
-                        : "2px solid transparent",
-                    transform:
-                      avatarColor === c.value ? "scale(1.2)" : "scale(1)",
-                  }}
-                  title={c.name}
-                />
-              ))}
-            </div>
           </div>
 
           {/* Form fields */}
