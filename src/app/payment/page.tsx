@@ -196,7 +196,7 @@ export default function PaymentPage() {
             className="text-xs text-center mt-2"
             style={{ color: 'var(--muted)' }}
           >
-            Opens Venmo with $100 pre-filled · If button isn&apos;t working, just go Venmo <strong>@John-Pontefract</strong>
+            Opens Venmo with $100 pre-filled · If button isn&apos;t working, just go Venmo <strong>@John-Pontefract (2423)</strong>
           </p>
         </div>
 
