@@ -50,6 +50,7 @@ export const sessions = sqliteTable("sessions", {
   expires: integer("expires", { mode: "timestamp" }).notNull(),
 });
 
+// Pre-tournament predictions (who will win the World Cup, favorite team)
 export const predictions = sqliteTable(
   "predictions",
   {
@@ -73,7 +74,34 @@ export const predictions = sqliteTable(
   })
 );
 
+// Match-by-match score predictions for the group stage
+export const matchPredictions = sqliteTable(
+  "match_predictions",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    matchId: integer("match_id").notNull(),
+    homeScore: integer("home_score"),
+    awayScore: integer("away_score"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => ({
+    userMatchIdx: uniqueIndex("user_match_idx").on(t.userId, t.matchId),
+  })
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Prediction = typeof predictions.$inferSelect;
 export type NewPrediction = typeof predictions.$inferInsert;
+export type MatchPrediction = typeof matchPredictions.$inferSelect;
+export type NewMatchPrediction = typeof matchPredictions.$inferInsert;
