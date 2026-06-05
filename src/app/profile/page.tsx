@@ -145,12 +145,12 @@ export default function ProfilePage() {
       className="min-h-screen"
       style={{ backgroundColor: "var(--background)" }}
     >
-      <div className="max-w-lg mx-auto px-6 py-12">
+      <div className="max-w-lg mx-auto px-4 py-8">
         {/* Nav buttons */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => router.push("/")}
-            className="flex items-center gap-2 text-sm transition-colors"
+            className="flex items-center gap-1.5 text-sm transition-colors"
             style={{ color: "var(--muted)" }}
             onMouseEnter={(e) =>
               (e.currentTarget.style.color = "var(--gold)")
@@ -174,26 +174,17 @@ export default function ProfilePage() {
 
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="px-4 py-2 text-xs font-medium rounded-lg transition-colors"
-            style={{
-              color: "var(--muted)",
-              border: "1px solid var(--border)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "var(--surface-hover)";
-              e.currentTarget.style.color = "var(--foreground)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "transparent";
-              e.currentTarget.style.color = "var(--muted)";
-            }}
+            className="text-[11px] font-medium transition-colors"
+            style={{ color: "var(--muted)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--foreground)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}
           >
             Sign out
           </button>
         </div>
 
         <div
-          className="rounded-2xl p-8"
+          className="rounded-2xl p-6"
           style={{
             backgroundColor: "var(--surface)",
             border: "1px solid var(--border)",

@@ -76,14 +76,14 @@ export default function HomePage() {
           borderColor: "var(--border)",
         }}
       >
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Trophy icon */}
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+          {/* Left: logo + name */}
+          <div className="flex items-center gap-2">
             <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
+              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: "rgba(212, 168, 67, 0.12)" }}
             >
-              <FifaTrophy size={18} />
+              <FifaTrophy size={16} />
             </div>
             <span
               className="font-semibold text-sm"
@@ -92,15 +92,15 @@ export default function HomePage() {
               Bangers
             </span>
             <span
-              className="text-xs font-medium tracking-wider uppercase"
+              className="text-[10px] font-medium tracking-wider uppercase hidden sm:inline"
               style={{ color: "var(--gold)" }}
             >
               FIFA World Cup
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Clickable avatar → profile */}
+          {/* Right: avatar + sign out */}
+          <div className="flex items-center gap-3">
             <Avatar
               image={profile.image}
               name={profile.name}
@@ -109,23 +109,12 @@ export default function HomePage() {
               className="ring-2 ring-gray-700"
               onClick={() => router.push("/profile")}
             />
-
-            {/* Sign out */}
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="px-4 py-2 text-xs font-medium rounded-lg transition-colors"
-              style={{
-                color: "var(--muted)",
-                border: "1px solid var(--border)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--surface-hover)";
-                e.currentTarget.style.color = "var(--foreground)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.color = "var(--muted)";
-              }}
+              className="text-[11px] font-medium transition-colors"
+              style={{ color: "var(--muted)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--foreground)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}
             >
               Sign out
             </button>
@@ -134,16 +123,16 @@ export default function HomePage() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-4xl mx-auto px-6 py-12">
+      <main className="max-w-4xl mx-auto px-4 py-8">
         <div
-          className="rounded-2xl p-8"
+          className="rounded-2xl p-6"
           style={{
             backgroundColor: "var(--surface)",
             border: "1px solid var(--border)",
           }}
         >
           <h1
-            className="text-3xl font-bold mb-2"
+            className="text-2xl sm:text-3xl font-bold mb-2"
             style={{ color: "var(--foreground)" }}
           >
             Hello, {firstName} 👋
@@ -155,7 +144,7 @@ export default function HomePage() {
           {/* Profile nudge if incomplete */}
           {!profile.profileComplete && (
             <div
-              className="mt-6 rounded-xl p-4 flex items-center justify-between"
+              className="mt-6 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
               style={{
                 backgroundColor: "rgba(212, 168, 67, 0.08)",
                 border: "1px solid rgba(212, 168, 67, 0.2)",
@@ -166,7 +155,7 @@ export default function HomePage() {
               </p>
               <button
                 onClick={() => router.push("/profile")}
-                className="px-4 py-2 text-xs font-semibold rounded-lg transition-colors"
+                className="px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
                 style={{
                   backgroundColor: "var(--gold)",
                   color: "var(--background)",
