@@ -198,7 +198,7 @@ export default function HomePage() {
                 💰 Payment required
               </p>
               <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
-                $100 entry fee · Predictions locked until paid
+                $100 entry fee · Pay when you&apos;re ready
               </p>
             </div>
             <button
