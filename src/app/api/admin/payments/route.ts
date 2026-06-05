@@ -52,7 +52,6 @@ export async function GET() {
 
   const db = getDb();
 
-  // Query all users with LEFT JOIN on payments
   const rows = await db
     .select({
       userId: users.id,
@@ -87,7 +86,90 @@ export async function GET() {
   return NextResponse.json(result);
 }
 
-/** POST /api/admin/payments — update a payment status (confirm/reject) */
+/** PUT /api/admin/payments — create or confirm a payment for a user */
+export async function PUT(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  if (!isAdmin(session.user.email)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  await ensureTable();
+
+  const body = await req.json();
+  const { userId, status } = body;
+
+  if (!userId || typeof userId !== "string") {
+    return NextResponse.json({ error: "Invalid userId" }, { status: 400 });
+  }
+
+  const db = getDb();
+  const now = new Date();
+
+  // Check for existing payment
+  const existing = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.userId, userId))
+    .limit(1);
+
+  if (existing.length > 0) {
+    // Update existing payment
+    await db
+      .update(payments)
+      .set({
+        status: status || "confirmed",
+        updatedAt: now,
+      })
+      .where(eq(payments.id, existing[0].id));
+  } else {
+    // Create new payment record
+    const id = `pay_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    await db.insert(payments).values({
+      id,
+      userId,
+      amountCents: 10000, // $100
+      status: status || "confirmed",
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
+/** DELETE /api/admin/payments — remove a payment (mark as unpaid) */
+export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  if (!isAdmin(session.user.email)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  await ensureTable();
+
+  const body = await req.json();
+  const { paymentId } = body;
+
+  if (!paymentId || typeof paymentId !== "string") {
+    return NextResponse.json({ error: "Invalid paymentId" }, { status: 400 });
+  }
+
+  const db = getDb();
+  await db.delete(payments).where(eq(payments.id, paymentId));
+
+  return NextResponse.json({ success: true });
+}
+
+/** POST /api/admin/payments — update a payment status (legacy, kept for compat) */
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
@@ -117,7 +199,6 @@ export async function POST(req: NextRequest) {
 
   const db = getDb();
 
-  // Check that the payment exists
   const existing = await db
     .select()
     .from(payments)

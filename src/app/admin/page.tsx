@@ -2,40 +2,54 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { ADMIN_EMAILS } from '@/lib/config';
 
-type PaymentStatus = 'pending' | 'confirmed' | 'rejected';
-
-interface AdminPayment {
-  userId: string;
-  name: string;
-  email: string;
-  paymentId: string | null;
-  status: PaymentStatus | null;
-  amount: number | null;
+interface PaymentRecord {
+  id: string;
+  status: string;
+  amountCents: number | null;
   venmoNote: string | null;
   createdAt: string | null;
   adminNotes: string | null;
+}
+
+interface UserPayment {
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+  };
+  payment: PaymentRecord | null;
 }
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [payments, setPayments] = useState<AdminPayment[]>([]);
+  const [data, setData] = useState<UserPayment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState<string | null>(null);
-  const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState<{
-    type: 'success' | 'error';
-    text: string;
-  } | null>(null);
+  const [toggling, setToggling] = useState<string | null>(null);
 
   const isAdmin =
     session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
+
+  const fetchPayments = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/payments');
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -45,106 +59,40 @@ export default function AdminPage() {
     if (status === 'authenticated' && isAdmin) {
       fetchPayments();
     }
-  }, [status, router, isAdmin]);
+  }, [status, router, isAdmin, fetchPayments]);
 
-  const fetchPayments = async () => {
-    setLoading(true);
+  const handleToggle = async (userId: string, currentlyPaid: boolean) => {
+    setToggling(userId);
     try {
-      const res = await fetch('/api/admin/payments');
-      if (res.ok) {
-        const data = await res.json();
-        setPayments(data);
+      if (currentlyPaid) {
+        // Unpaid: delete the confirmed payment
+        const item = data.find((d) => d.user.id === userId);
+        if (item?.payment) {
+          await fetch('/api/admin/payments', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentId: item.payment.id }),
+          });
+        }
+      } else {
+        // Paid: create or confirm a payment
+        await fetch('/api/admin/payments', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, status: 'confirmed' }),
+        });
       }
+      await fetchPayments();
     } catch {
       // ignore
     } finally {
-      setLoading(false);
+      setToggling(null);
     }
   };
 
-  const handleUpdate = async (
-    userId: string,
-    action: 'confirmed' | 'rejected'
-  ) => {
-    setUpdating(userId);
-    setMessage(null);
-
-    try {
-      const res = await fetch('/api/admin/payments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          status: action,
-          adminNotes: adminNotes[userId] || null,
-        }),
-      });
-
-      if (res.ok) {
-        setMessage({
-          type: 'success',
-          text: `Payment ${action} successfully.`,
-        });
-        setAdminNotes((prev) => ({ ...prev, [userId]: '' }));
-        await fetchPayments();
-      } else {
-        const err = await res.json().catch(() => null);
-        setMessage({
-          type: 'error',
-          text: err?.error || 'Failed to update payment.',
-        });
-      }
-    } catch {
-      setMessage({ type: 'error', text: 'Network error. Please try again.' });
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const statusBadge = (s: PaymentStatus | null) => {
-    const styles: Record<string, { bg: string; color: string; label: string }> =
-      {
-        pending: {
-          bg: 'rgba(212, 168, 67, 0.15)',
-          color: '#d4a843',
-          label: '⏳ Pending',
-        },
-        confirmed: {
-          bg: 'rgba(34, 197, 94, 0.15)',
-          color: '#22c55e',
-          label: '✓ Confirmed',
-        },
-        rejected: {
-          bg: 'rgba(239, 68, 68, 0.15)',
-          color: '#ef4444',
-          label: '✗ Rejected',
-        },
-      };
-
-    if (!s) {
-      return (
-        <span
-          className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
-          style={{
-            backgroundColor: 'rgba(100, 100, 100, 0.15)',
-            color: '#888',
-          }}
-        >
-          No Payment
-        </span>
-      );
-    }
-
-    const style = styles[s];
-    return (
-      <span
-        className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
-        style={{ backgroundColor: style.bg, color: style.color }}
-      >
-        {style.label}
-      </span>
-    );
-  };
+  const paidCount = data.filter(
+    (d) => d.payment?.status === 'confirmed'
+  ).length;
 
   if (status === 'loading' || (status === 'authenticated' && loading)) {
     return (
@@ -220,71 +168,40 @@ export default function AdminPage() {
             ⚙️ Admin Panel
           </h1>
           <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            Manage payment confirmations for all users
+            Toggle payment status for each player
           </p>
         </div>
 
-        {/* Message */}
-        {message && (
-          <div
-            className="rounded-lg p-3 mb-4"
-            style={{
-              backgroundColor:
-                message.type === 'success'
-                  ? 'rgba(34, 197, 94, 0.1)'
-                  : 'rgba(239, 68, 68, 0.1)',
-              border: `1px solid ${message.type === 'success' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-            }}
-          >
-            <p
-              className="text-sm"
-              style={{
-                color: message.type === 'success' ? '#22c55e' : '#ef4444',
-              }}
-            >
-              {message.text}
-            </p>
-          </div>
-        )}
-
         {/* Summary */}
         <div
-          className="rounded-2xl p-4 mb-4 flex gap-4 flex-wrap"
+          className="rounded-2xl p-4 mb-4 flex gap-4"
           style={{
             backgroundColor: 'var(--surface)',
             border: '1px solid var(--border)',
           }}
         >
-          <div className="flex-1 min-w-[100px] text-center">
+          <div className="flex-1 text-center">
             <p className="text-2xl font-bold" style={{ color: 'var(--gold)' }}>
-              {payments.length}
+              {data.length}
             </p>
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              Total Users
+              Players
             </p>
           </div>
-          <div className="flex-1 min-w-[100px] text-center">
-            <p className="text-2xl font-bold" style={{ color: '#d4a843' }}>
-              {payments.filter((p) => p.status === 'pending').length}
-            </p>
-            <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              Pending
-            </p>
-          </div>
-          <div className="flex-1 min-w-[100px] text-center">
+          <div className="flex-1 text-center">
             <p className="text-2xl font-bold" style={{ color: '#22c55e' }}>
-              {payments.filter((p) => p.status === 'confirmed').length}
+              {paidCount}
             </p>
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              Confirmed
+              Paid
             </p>
           </div>
-          <div className="flex-1 min-w-[100px] text-center">
+          <div className="flex-1 text-center">
             <p className="text-2xl font-bold" style={{ color: '#888' }}>
-              {payments.filter((p) => !p.status).length}
+              {data.length - paidCount}
             </p>
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              No Payment
+              Unpaid
             </p>
           </div>
         </div>
@@ -305,8 +222,8 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* User Cards */}
-        {payments.length === 0 ? (
+        {/* User List */}
+        {data.length === 0 ? (
           <div
             className="rounded-2xl p-8 text-center"
             style={{
@@ -319,177 +236,79 @@ export default function AdminPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {/* Sort: pending first, then no payment, then confirmed/rejected */}
-            {[...payments]
+          <div className="space-y-2">
+            {[...data]
               .sort((a, b) => {
-                const order: Record<string, number> = {
-                  pending: 0,
-                  null: 1,
-                  confirmed: 2,
-                  rejected: 3,
-                };
-                const aKey = a.status ?? 'null';
-                const bKey = b.status ?? 'null';
-                return (order[aKey] ?? 1) - (order[bKey] ?? 1);
+                const aPaid = a.payment?.status === 'confirmed' ? 1 : 0;
+                const bPaid = b.payment?.status === 'confirmed' ? 1 : 0;
+                return aPaid - bPaid; // unpaid first
               })
-              .map((user) => (
-                <div
-                  key={user.userId}
-                  className="rounded-2xl p-5"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  {/* User Info */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3
-                        className="font-bold text-base"
+              .map((item) => {
+                const isPaid = item.payment?.status === 'confirmed';
+                const isToggling = toggling === item.user.id;
+
+                return (
+                  <div
+                    key={item.user.id}
+                    className="rounded-xl px-4 py-3 flex items-center justify-between gap-3"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    {/* Left: name + email */}
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="font-semibold text-sm truncate"
                         style={{ color: 'var(--foreground)' }}
                       >
-                        {user.name || 'Unknown User'}
-                      </h3>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-                        {user.email}
+                        {item.user.name || 'Unknown'}
+                      </p>
+                      <p
+                        className="text-xs truncate"
+                        style={{ color: 'var(--muted)' }}
+                      >
+                        {item.user.email}
                       </p>
                     </div>
-                    {statusBadge(user.status)}
-                  </div>
 
-                  {/* Payment Details */}
-                  {user.paymentId && (
-                    <div
-                      className="rounded-lg p-3 mb-3 text-sm space-y-1"
+                    {/* Right: toggle */}
+                    <button
+                      onClick={() =>
+                        handleToggle(item.user.id, isPaid)
+                      }
+                      disabled={isToggling}
+                      className="relative flex-shrink-0 transition-colors duration-200"
                       style={{
-                        backgroundColor: 'var(--navy-light, rgba(255,255,255,0.03))',
-                        border: '1px solid var(--border)',
+                        width: 52,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: isPaid
+                          ? '#22c55e'
+                          : 'rgba(100,100,100,0.4)',
+                        cursor: isToggling ? 'not-allowed' : 'pointer',
+                        opacity: isToggling ? 0.5 : 1,
+                        border: 'none',
+                        padding: 0,
                       }}
                     >
-                      {user.amount != null && (
-                        <div className="flex justify-between">
-                          <span style={{ color: 'var(--muted)' }}>Amount</span>
-                          <span
-                            className="font-bold"
-                            style={{ color: 'var(--gold)' }}
-                          >
-                            ${user.amount.toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                      {user.venmoNote && (
-                        <div className="flex justify-between">
-                          <span style={{ color: 'var(--muted)' }}>
-                            Venmo Note
-                          </span>
-                          <span style={{ color: 'var(--foreground)' }}>
-                            {user.venmoNote}
-                          </span>
-                        </div>
-                      )}
-                      {user.createdAt && (
-                        <div className="flex justify-between">
-                          <span style={{ color: 'var(--muted)' }}>
-                            Submitted
-                          </span>
-                          <span style={{ color: 'var(--foreground)' }}>
-                            {new Date(user.createdAt).toLocaleDateString()}{' '}
-                            {new Date(user.createdAt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        </div>
-                      )}
-                      {user.adminNotes && (
-                        <div className="flex justify-between">
-                          <span style={{ color: 'var(--muted)' }}>
-                            Admin Notes
-                          </span>
-                          <span style={{ color: 'var(--foreground)' }}>
-                            {user.adminNotes}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Actions for pending payments */}
-                  {user.status === 'pending' && (
-                    <div className="space-y-2">
-                      <input
-                        type="text"
-                        value={adminNotes[user.userId] || ''}
-                        onChange={(e) =>
-                          setAdminNotes((prev) => ({
-                            ...prev,
-                            [user.userId]: e.target.value,
-                          }))
-                        }
-                        placeholder="Admin notes (optional)"
-                        className="w-full px-3 py-2 rounded-lg text-sm outline-none transition-colors"
+                      <div
+                        className="absolute top-0.5 transition-transform duration-200"
                         style={{
-                          backgroundColor:
-                            'var(--navy-light, rgba(255,255,255,0.03))',
-                          border: '1px solid var(--border)',
-                          color: 'var(--foreground)',
+                          width: 24,
+                          height: 24,
+                          borderRadius: 12,
+                          backgroundColor: '#fff',
+                          transform: isPaid
+                            ? 'translateX(26px)'
+                            : 'translateX(2px)',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
                         }}
-                        onFocus={(e) =>
-                          (e.currentTarget.style.borderColor = 'var(--gold)')
-                        }
-                        onBlur={(e) =>
-                          (e.currentTarget.style.borderColor = 'var(--border)')
-                        }
                       />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleUpdate(user.userId, 'confirmed')}
-                          disabled={updating === user.userId}
-                          className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all"
-                          style={{
-                            backgroundColor:
-                              updating === user.userId
-                                ? 'rgba(34, 197, 94, 0.3)'
-                                : 'rgba(34, 197, 94, 0.15)',
-                            color: '#22c55e',
-                            border: '1px solid rgba(34, 197, 94, 0.3)',
-                            cursor:
-                              updating === user.userId
-                                ? 'not-allowed'
-                                : 'pointer',
-                          }}
-                        >
-                          {updating === user.userId
-                            ? 'Updating...'
-                            : '✓ Confirm'}
-                        </button>
-                        <button
-                          onClick={() => handleUpdate(user.userId, 'rejected')}
-                          disabled={updating === user.userId}
-                          className="flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all"
-                          style={{
-                            backgroundColor:
-                              updating === user.userId
-                                ? 'rgba(239, 68, 68, 0.3)'
-                                : 'rgba(239, 68, 68, 0.15)',
-                            color: '#ef4444',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                            cursor:
-                              updating === user.userId
-                                ? 'not-allowed'
-                                : 'pointer',
-                          }}
-                        >
-                          {updating === user.userId
-                            ? 'Updating...'
-                            : '✗ Reject'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    </button>
+                  </div>
+                );
+              })}
           </div>
         )}
       </main>
