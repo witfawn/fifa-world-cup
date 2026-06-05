@@ -93,6 +93,14 @@ export default function LoginPage() {
             the beautiful game.
           </p>
 
+          <a
+            href="/rules"
+            className="block text-center text-xs mt-2 mb-2 underline"
+            style={{ color: "var(--gold)" }}
+          >
+            📋 How to Play
+          </a>
+
           {/* Google Sign-In Button */}
           <button
             onClick={() => signIn("google", { callbackUrl: "/" })}
@@ -162,7 +170,7 @@ export default function LoginPage() {
                 <button
                   onClick={handleMagicLink}
                   disabled={sending || !email.trim()}
-                  className="px-5 py-3 rounded-lg text-sm font-medium transition-all"
+                  className="px-3 py-3 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0"
                   style={{
                     backgroundColor: sending || !email.trim() ? "var(--navy-light)" : "var(--surface-hover)",
                     color: sending || !email.trim() ? "var(--muted)" : "var(--foreground)",

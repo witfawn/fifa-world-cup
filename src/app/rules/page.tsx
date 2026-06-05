@@ -12,12 +12,24 @@ export default function RulesPage() {
       <Header />
 
       <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
-        <h1
-          className="text-2xl font-bold mb-2"
-          style={{ color: "var(--foreground)" }}
-        >
-          📋 How to Play
-        </h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1
+            className="text-2xl font-bold"
+            style={{ color: "var(--foreground)" }}
+          >
+            📋 How to Play
+          </h1>
+          <a
+            href="/login"
+            className="text-xs font-medium px-3 py-1.5 rounded-lg"
+            style={{
+              backgroundColor: "rgba(212, 168, 67, 0.12)",
+              color: "var(--gold)",
+            }}
+          >
+            Log in →
+          </a>
+        </div>
         <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>
           Predict match scores for the FIFA World Cup 2026 and compete with your friends.
         </p>
