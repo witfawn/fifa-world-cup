@@ -53,23 +53,15 @@ export function getAllGroups(): string[] {
   return groups;
 }
 
-/**
+/** 
  * Parse a date + PT time string into a Date object (Pacific Time).
  * The schedule times are in Pacific Time; we parse them as-is since
  * the schedule is a static JSON — DST is already baked in.
  */
 export function parseKickoff(dateStr: string, timeStr: string): Date {
   // dateStr: "2026-06-11", timeStr: "12:00 PM"
-  // We construct an ISO string in Pacific Time offset.
-  // For simplicity, treat the schedule times as America/Los_Angeles.
-  // June 2026 is PDT (UTC-7).
-  const dt = new Date(`${dateStr}T${timeStr} America/Los_Angeles`);
-  // If the above doesn't work (it won't — Date constructor doesn't parse tz),
-  // fall back to manual parsing.
-  if (!isNaN(dt.getTime())) return dt;
-
   // Manual parse: date + time → assume PDT (UTC-7)
-  const [month, day] = dateStr.split("-").map(Number);
+  const [year, month, day] = dateStr.split("-").map(Number);
   const [timePart, period] = timeStr.split(" ");
   const parts = timePart.split(":").map(Number);
   let hours = parts[0];
@@ -78,7 +70,7 @@ export function parseKickoff(dateStr: string, timeStr: string): Date {
   if (period === "AM" && hours === 12) hours = 0;
 
   // Build as UTC then subtract 7 hours (PDT)
-  const utcDate = new Date(Date.UTC(2026, month - 1, day, hours + 7, minutes, 0));
+  const utcDate = new Date(Date.UTC(year, month - 1, day, hours + 7, minutes, 0));
   return utcDate;
 }
 
@@ -108,12 +100,15 @@ export function formatCountdown(dateStr: string, timeStr: string): string {
   return `${minutes}m`;
 }
 
-/** Format kickoff for display: "Jun 11 · 12:00 PM PT" */
+/** Format kickoff for display: "Thursday, Jun 11 · 12:00 PM PT" */
 export function formatKickoff(dateStr: string, timeStr: string): string {
-  const [month, day] = dateStr.split("-").map(Number);
+  const [, month, day] = dateStr.split("-").map(Number);
   const monthNames = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ];
-  return `${monthNames[month - 1]} ${day} · ${timeStr} PT`;
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const kickoff = parseKickoff(dateStr, timeStr);
+  const dayName = dayNames[kickoff.getUTCDay()];
+  return `${dayName}, ${monthNames[month - 1]} ${day} · ${timeStr} PT`;
 }

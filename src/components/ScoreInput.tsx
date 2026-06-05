@@ -11,47 +11,72 @@ export default function ScoreInput({
   onChange,
   disabled,
 }: ScoreInputProps) {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    if (raw === "") {
+  const currentValue = value ?? 0;
+  const hasValue = value !== null && value !== undefined;
+
+  const increment = () => {
+    if (disabled) return;
+    const newVal = Math.min(currentValue + 1, 20);
+    onChange(newVal);
+  };
+
+  const decrement = () => {
+    if (disabled) return;
+    if (currentValue <= 0) {
       onChange(null);
-      return;
-    }
-    const num = parseInt(raw, 10);
-    if (!isNaN(num) && num >= 0 && num <= 99) {
-      onChange(num);
+    } else {
+      onChange(currentValue - 1);
     }
   };
 
   return (
-    <input
-      type="number"
-      min={0}
-      max={99}
-      value={value !== null && value !== undefined ? value : ""}
-      onChange={handleChange}
-      disabled={disabled}
-      placeholder="—"
-      className="w-12 h-12 text-center text-lg font-bold rounded-lg outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-      style={{
-        backgroundColor: disabled ? "var(--navy)" : "var(--navy-light)",
-        border: value !== null && value !== undefined
-          ? "2px solid var(--gold)"
-          : "2px solid var(--border)",
-        color: disabled ? "var(--muted)" : "var(--foreground)",
-        cursor: disabled ? "not-allowed" : "text",
-        opacity: disabled ? 0.5 : 1,
-      }}
-      onFocus={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.borderColor = "var(--gold)";
-        }
-      }}
-      onBlur={(e) => {
-        if (!disabled && (value === null || value === undefined)) {
-          e.currentTarget.style.borderColor = "var(--border)";
-        }
-      }}
-    />
+    <div className="flex items-center gap-1">
+      {/* Minus button */}
+      <button
+        onClick={decrement}
+        disabled={disabled || (!hasValue && currentValue === 0)}
+        className="w-8 h-10 rounded-lg flex items-center justify-center text-lg font-bold transition-all"
+        style={{
+          backgroundColor: disabled ? "var(--navy)" : "var(--navy-light)",
+          border: "2px solid var(--border)",
+          color: disabled ? "var(--muted)" : "var(--foreground)",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+        }}
+      >
+        −
+      </button>
+
+      {/* Score display */}
+      <div
+        className="w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold"
+        style={{
+          backgroundColor: disabled ? "var(--navy)" : "var(--navy-light)",
+          border: hasValue
+            ? "2px solid var(--gold)"
+            : "2px solid var(--border)",
+          color: disabled ? "var(--muted)" : "var(--foreground)",
+          opacity: disabled ? 0.5 : 1,
+        }}
+      >
+        {hasValue ? currentValue : "—"}
+      </div>
+
+      {/* Plus button */}
+      <button
+        onClick={increment}
+        disabled={disabled}
+        className="w-8 h-10 rounded-lg flex items-center justify-center text-lg font-bold transition-all"
+        style={{
+          backgroundColor: disabled ? "var(--navy)" : "var(--navy-light)",
+          border: "2px solid var(--border)",
+          color: disabled ? "var(--muted)" : "var(--foreground)",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+        }}
+      >
+        +
+      </button>
+    </div>
   );
 }
