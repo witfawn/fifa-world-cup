@@ -101,7 +101,7 @@ export default function LoginPage() {
               border: "1px solid rgba(212, 168, 67, 0.2)",
               color: "var(--gold)",
               marginTop: "4px",
-              marginBottom: "4px",
+              marginBottom: "12px",
             }}
           >
             📋 How to Play
@@ -146,14 +146,14 @@ export default function LoginPage() {
 
           {/* Magic Link Form */}
           {!sent ? (
-            <div className="w-full">
+            <div className="w-full overflow-hidden">
               <label
                 className="block text-xs font-medium mb-2 uppercase tracking-wider"
                 style={{ color: "var(--muted)" }}
               >
                 Sign in with email
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full">
                 <input
                   type="email"
                   value={email}
