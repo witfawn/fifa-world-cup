@@ -14,11 +14,48 @@ interface Payment {
   status: PaymentStatus;
 }
 
+function getPayoutTiers(playerCount: number) {
+  const pot = playerCount * ENTRY_FEE;
+
+  if (playerCount < 10) {
+    return { pot, tiers: [{ place: '🥇 1st Place', pct: 100, amount: pot }] };
+  }
+  if (playerCount <= 15) {
+    return {
+      pot,
+      tiers: [
+        { place: '🥇 1st Place', pct: 70, amount: Math.round(pot * 0.7) },
+        { place: '🥈 2nd Place', pct: 30, amount: Math.round(pot * 0.3) },
+      ],
+    };
+  }
+  if (playerCount <= 20) {
+    return {
+      pot,
+      tiers: [
+        { place: '🥇 1st Place', pct: 65, amount: Math.round(pot * 0.65) },
+        { place: '🥈 2nd Place', pct: 25, amount: Math.round(pot * 0.25) },
+        { place: '🥉 3rd Place', pct: 10, amount: Math.round(pot * 0.1) },
+      ],
+    };
+  }
+  return {
+    pot,
+    tiers: [
+      { place: '🥇 1st Place', pct: 60, amount: Math.round(pot * 0.6) },
+      { place: '🥈 2nd Place', pct: 25, amount: Math.round(pot * 0.25) },
+      { place: '🥉 3rd Place', pct: 10, amount: Math.round(pot * 0.1) },
+      { place: '4th Place', pct: 5, amount: Math.round(pot * 0.05) },
+    ],
+  };
+}
+
 export default function PaymentPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const [payment, setPayment] = useState<Payment | null>(null);
+  const [playerCount, setPlayerCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,10 +64,14 @@ export default function PaymentPage() {
       return;
     }
     if (status === 'authenticated') {
-      fetch('/api/payment')
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          setPayment(data?.payment ?? null);
+      Promise.all([
+        fetch('/api/payment').then((r) => (r.ok ? r.json() : null)),
+        fetch('/api/leaderboard').then((r) => (r.ok ? r.json() : null)),
+      ])
+        .then(([paymentData, lbData]) => {
+          setPayment(paymentData?.payment ?? null);
+          const count = lbData?.leaderboard?.length ?? 0;
+          setPlayerCount(count || 8); // fallback to 8 if no data yet
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -54,6 +95,7 @@ export default function PaymentPage() {
   if (!session) return null;
 
   const isPaid = payment?.status === 'confirmed';
+  const { pot, tiers } = getPayoutTiers(playerCount);
 
   return (
     <div
@@ -74,7 +116,10 @@ export default function PaymentPage() {
           >
             <span className="text-2xl">✅</span>
             <div>
-              <p className="text-sm font-semibold" style={{ color: '#22c55e' }}>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: '#22c55e' }}
+              >
                 You&apos;re all paid up!
               </p>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
@@ -92,7 +137,10 @@ export default function PaymentPage() {
           >
             <span className="text-2xl">⏳</span>
             <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--gold)' }}>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: 'var(--gold)' }}
+              >
                 Payment not yet confirmed
               </p>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>
@@ -102,7 +150,7 @@ export default function PaymentPage() {
           </div>
         )}
 
-        {/* Entry Fee */}
+        {/* Entry Fee + Venmo */}
         <div
           className="rounded-2xl p-6 mb-4"
           style={{
@@ -121,7 +169,10 @@ export default function PaymentPage() {
           </p>
 
           <div className="flex items-center justify-between mb-5">
-            <span className="text-sm font-medium" style={{ color: 'var(--muted)' }}>
+            <span
+              className="text-sm font-medium"
+              style={{ color: 'var(--muted)' }}
+            >
               Amount
             </span>
             <span
@@ -132,25 +183,24 @@ export default function PaymentPage() {
             </span>
           </div>
 
-          {/* Venmo Button */}
           <a
             href={VENMO_LINK}
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full text-center px-6 py-3.5 rounded-xl text-sm font-bold transition-all"
-            style={{
-              backgroundColor: '#008CFF',
-              color: '#fff',
-            }}
+            style={{ backgroundColor: '#008CFF', color: '#fff' }}
           >
             Pay with Venmo →
           </a>
-          <p className="text-xs text-center mt-2" style={{ color: 'var(--muted)' }}>
+          <p
+            className="text-xs text-center mt-2"
+            style={{ color: 'var(--muted)' }}
+          >
             Opens Venmo with $100 pre-filled
           </p>
         </div>
 
-        {/* Payout Table */}
+        {/* Prize Pool */}
         <div
           className="rounded-2xl p-6 mb-4"
           style={{
@@ -159,23 +209,19 @@ export default function PaymentPage() {
           }}
         >
           <h2
-            className="text-sm font-bold uppercase tracking-wider mb-4"
+            className="text-sm font-bold uppercase tracking-wider mb-1"
             style={{ color: 'var(--gold)' }}
           >
             🏆 Prize Pool
           </h2>
           <p className="text-xs mb-4" style={{ color: 'var(--muted)' }}>
-            8 players × $100 = $800 pot
+            {playerCount} players × ${ENTRY_FEE} = ${pot.toLocaleString()} pot
           </p>
 
           <div className="space-y-2">
-            {[
-              { place: '🥇 1st Place', pct: 60, amount: 480 },
-              { place: '🥈 2nd Place', pct: 30, amount: 240 },
-              { place: '🥉 3rd Place', pct: 10, amount: 80 },
-            ].map((row) => (
+            {tiers.map((tier) => (
               <div
-                key={row.place}
+                key={tier.place}
                 className="flex items-center justify-between py-2 px-3 rounded-lg"
                 style={{ backgroundColor: 'var(--navy-light)' }}
               >
@@ -183,20 +229,20 @@ export default function PaymentPage() {
                   className="text-sm font-medium"
                   style={{ color: 'var(--foreground)' }}
                 >
-                  {row.place}
+                  {tier.place}
                 </span>
                 <div className="text-right">
                   <span
                     className="text-sm font-bold"
                     style={{ color: 'var(--gold)' }}
                   >
-                    ${row.amount}
+                    ${tier.amount.toLocaleString()}
                   </span>
                   <span
                     className="text-xs ml-1.5"
                     style={{ color: 'var(--muted)' }}
                   >
-                    ({row.pct}%)
+                    ({tier.pct}%)
                   </span>
                 </div>
               </div>
@@ -218,10 +264,23 @@ export default function PaymentPage() {
           >
             How it works
           </h2>
-          <div className="space-y-3 text-sm" style={{ color: 'var(--muted)' }}>
-            <p>1. Tap <strong style={{ color: 'var(--foreground)' }}>Pay with Venmo</strong> above and send $100</p>
-            <p>2. John will confirm your payment (usually within a day)</p>
-            <p>3. Once confirmed, you&apos;re in the game!</p>
+          <div
+            className="space-y-3 text-sm"
+            style={{ color: 'var(--muted)' }}
+          >
+            <p>
+              1. Tap{' '}
+              <strong style={{ color: 'var(--foreground)' }}>
+                Pay with Venmo
+              </strong>{' '}
+              above and send $100
+            </p>
+            <p>
+              2. John will confirm your payment (usually within a day)
+            </p>
+            <p>
+              3. Once confirmed, you&apos;re in the game!
+            </p>
           </div>
         </div>
       </main>
