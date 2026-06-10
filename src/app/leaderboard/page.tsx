@@ -266,7 +266,7 @@ export default function LeaderboardPage() {
                             border: "1px solid rgba(239, 68, 68, 0.25)",
                           }}
                         >
-                          💰 Unpaid
+                          Unpaid
                         </a>
                       )}
                     </div>
