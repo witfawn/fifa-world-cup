@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getDb, getClient } from "@/lib/db";
-import { users, matchPredictions } from "@/lib/db/schema";
+import { users, matchPredictions, payments } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
-import { eq, count } from "drizzle-orm";
+import { eq, count, and } from "drizzle-orm";
 
 let migrated = false;
 
@@ -43,7 +43,7 @@ export async function GET() {
 
   const db = getDb();
 
-  // Get all users with their prediction counts
+  // Get all users with their prediction counts and payment status
   const usersWithCounts = await db
     .select({
       id: users.id,
@@ -51,11 +51,16 @@ export async function GET() {
       image: users.image,
       avatarColor: users.avatarColor,
       predictionCount: count(matchPredictions.id),
+      hasPaid: payments.status,
     })
     .from(users)
     .leftJoin(
       matchPredictions,
       eq(users.id, matchPredictions.userId)
+    )
+    .leftJoin(
+      payments,
+      and(eq(users.id, payments.userId), eq(payments.status, "confirmed"))
     )
     .groupBy(users.id);
 
@@ -98,6 +103,7 @@ export async function GET() {
       predictionCount: u.predictionCount,
       totalPoints,
       picksWithScores,
+      hasPaid: u.hasPaid === "confirmed",
     };
   });
 

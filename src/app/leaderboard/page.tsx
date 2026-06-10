@@ -14,6 +14,7 @@ interface LeaderboardEntry {
   predictionCount: number;
   totalPoints: number;
   rank: number;
+  hasPaid: boolean;
 }
 
 interface CurrentUserPerformance {
@@ -255,6 +256,19 @@ export default function LeaderboardPage() {
                           </span>
                         )}
                       </span>
+                      {!entry.hasPaid && (
+                        <a
+                          href="/payment"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105"
+                          style={{
+                            backgroundColor: "rgba(239, 68, 68, 0.12)",
+                            color: "#ef4444",
+                            border: "1px solid rgba(239, 68, 68, 0.25)",
+                          }}
+                        >
+                          💰 Unpaid
+                        </a>
+                      )}
                     </div>
 
                     {/* Points */}
