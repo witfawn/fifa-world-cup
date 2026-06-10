@@ -142,6 +142,11 @@ export async function GET() {
     {
       leaderboard: ranked,
       totalPlayers: ranked.length,
+      debug: {
+        queryUserCount: ranked.length,
+        userNames: ranked.map((e) => e.name),
+        timestamp: new Date().toISOString(),
+      },
       currentUser: currentUserId
         ? {
             rank: currentUserEntry?.rank ?? ranked.length + 1,
