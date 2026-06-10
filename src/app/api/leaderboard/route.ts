@@ -138,16 +138,26 @@ export async function GET() {
         )
       : 0;
 
-  return NextResponse.json({
-    leaderboard: ranked,
-    totalPlayers: ranked.length,
-    currentUser: currentUserId
-      ? {
-          rank: currentUserEntry?.rank ?? ranked.length + 1,
-          points: currentUserEntry?.totalPoints ?? 0,
-          picks: currentUserEntry?.predictionCount ?? 0,
-          avgPerGame,
-        }
-      : null,
-  });
+  return NextResponse.json(
+    {
+      leaderboard: ranked,
+      totalPlayers: ranked.length,
+      currentUser: currentUserId
+        ? {
+            rank: currentUserEntry?.rank ?? ranked.length + 1,
+            points: currentUserEntry?.totalPoints ?? 0,
+            picks: currentUserEntry?.predictionCount ?? 0,
+            avgPerGame,
+          }
+        : null,
+    },
+    {
+      headers: {
+        "Cache-Control":
+          "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    }
+  );
 }
