@@ -46,7 +46,7 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      fetch("/api/leaderboard")
+      fetch(`/api/leaderboard?t=${Date.now()}`)
         .then((res) => res.json())
         .then((d: LeaderboardResponse) => {
           setData(d);
