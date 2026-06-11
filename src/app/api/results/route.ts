@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
-import { getClient } from "@/lib/db";
+import { createClient } from "@libsql/client";
 
 export const dynamic = "force-dynamic";
 
-async function ensureTable() {
-  const client = getClient();
+/** GET /api/results — return all match results (public, raw SQL, fresh client) */
+export async function GET() {
+  // Create a FRESH client per request to avoid stale connection pooling
+  const client = createClient({
+    url: process.env.TURSO_DATABASE_URL!,
+    authToken: process.env.TURSO_AUTH_TOKEN!,
+  });
+
+  // Ensure table exists
   try {
     await client.execute(`
       CREATE TABLE IF NOT EXISTS match_results (
@@ -18,21 +25,9 @@ async function ensureTable() {
       )
     `);
   } catch {}
-  try {
-    await client.execute(
-      "CREATE INDEX IF NOT EXISTS idx_match_results_match_id ON match_results(match_id)"
-    );
-  } catch {}
-}
-
-/** GET /api/results — return all match results (public, raw SQL) */
-export async function GET() {
-  await ensureTable();
-  const client = getClient();
 
   const result = await client.execute("SELECT * FROM match_results");
 
-  // Map snake_case to camelCase
   const results = result.rows.map((row) => {
     const r = row as Record<string, unknown>;
     return {
@@ -51,7 +46,6 @@ export async function GET() {
       "Cache-Control": "no-store, no-cache, must-revalidate, private",
       "CDN-Cache-Control": "no-store",
       "Vercel-CDN-Cache-Control": "no-store",
-      "X-Debug-Time": new Date().toISOString(),
     },
   });
 }
