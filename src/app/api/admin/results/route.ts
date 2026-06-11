@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getDb, getClient } from "@/lib/db";
-import { matchResults, matchPredictions, userPoints } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { getClient } from "@/lib/db";
 import { ADMIN_EMAILS } from "@/lib/config";
 import { calculatePoints, getMatchType } from "@/lib/scoring";
 import { getAllMatches } from "@/lib/schedule";
@@ -77,88 +75,80 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid scores" }, { status: 400 });
   }
 
-  const db = getDb();
-  const now = new Date();
+  const client = getClient();
+  const now = Math.floor(Date.now() / 1000);
 
-  // Upsert the match result
-  const existing = await db
-    .select()
-    .from(matchResults)
-    .where(eq(matchResults.matchId, matchId))
-    .limit(1);
+  // Check if existing result exists (raw SQL)
+  const existingResult = await client.execute({
+    sql: "SELECT id, is_locked FROM match_results WHERE match_id = ? LIMIT 1",
+    args: [matchId],
+  });
 
-  if (existing.length > 0) {
-    await db
-      .update(matchResults)
-      .set({
-        homeScore,
-        awayScore,
-        isLocked: isLocked ?? existing[0].isLocked,
-        updatedAt: now,
-      })
-      .where(eq(matchResults.id, existing[0].id));
+  let locked = false;
+
+  if (existingResult.rows.length > 0) {
+    // Update existing
+    const existingId = existingResult.rows[0].id;
+    const existingLocked = existingResult.rows[0].is_locked;
+    locked = isLocked ?? (existingLocked === 1);
+
+    await client.execute({
+      sql: "UPDATE match_results SET home_score = ?, away_score = ?, is_locked = ?, updated_at = ? WHERE id = ?",
+      args: [homeScore, awayScore, locked ? 1 : 0, now, existingId],
+    });
   } else {
+    // Insert new
     const id = crypto.randomUUID();
-    await db.insert(matchResults).values({
-      id,
-      matchId,
-      homeScore,
-      awayScore,
-      isLocked: isLocked ?? false,
-      createdAt: now,
-      updatedAt: now,
+    locked = isLocked ?? false;
+
+    await client.execute({
+      sql: "INSERT INTO match_results (id, match_id, home_score, away_score, is_locked, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      args: [id, matchId, homeScore, awayScore, locked ? 1 : 0, now, now],
     });
   }
 
   // If locking, run scoring engine
-  const locked = isLocked ?? (existing.length > 0 ? existing[0].isLocked : false);
   if (locked) {
     // Determine match type (group vs knockout) from schedule
     const scheduleMatch = getAllMatches().find((m) => m.id === matchId);
     const matchType = scheduleMatch ? getMatchType(scheduleMatch.group) : "group";
 
-    // Get all predictions for this match
-    const predictions = await db
-      .select()
-      .from(matchPredictions)
-      .where(eq(matchPredictions.matchId, matchId));
+    // Get all predictions for this match (raw SQL)
+    const predictionsResult = await client.execute({
+      sql: "SELECT user_id, home_score, away_score FROM match_predictions WHERE match_id = ?",
+      args: [matchId],
+    });
 
     // Calculate and upsert points for each user
-    for (const pred of predictions) {
+    for (const pred of predictionsResult.rows) {
+      const predHome = pred.home_score;
+      const predAway = pred.away_score;
+
       // Skip users with no prediction — they get 0 points
-      if (pred.homeScore === null || pred.awayScore === null) continue;
+      if (predHome === null || predHome === undefined || predAway === null || predAway === undefined) continue;
 
       const points = calculatePoints(
-        { homeScore: pred.homeScore, awayScore: pred.awayScore },
+        { homeScore: Number(predHome), awayScore: Number(predAway) },
         { homeScore, awayScore },
         matchType
       );
 
-      // Upsert user points
-      const existingPoints = await db
-        .select()
-        .from(userPoints)
-        .where(
-          and(
-            eq(userPoints.userId, pred.userId),
-            eq(userPoints.matchId, matchId)
-          )
-        )
-        .limit(1);
+      // Upsert user points (raw SQL)
+      const existingPoints = await client.execute({
+        sql: "SELECT id FROM user_points WHERE user_id = ? AND match_id = ? LIMIT 1",
+        args: [pred.user_id, matchId],
+      });
 
-      if (existingPoints.length > 0) {
-        await db
-          .update(userPoints)
-          .set({ points, createdAt: now })
-          .where(eq(userPoints.id, existingPoints[0].id));
+      if (existingPoints.rows.length > 0) {
+        await client.execute({
+          sql: "UPDATE user_points SET points = ?, created_at = ? WHERE id = ?",
+          args: [points, now, existingPoints.rows[0].id],
+        });
       } else {
         const id = crypto.randomUUID();
-        await db.insert(userPoints).values({
-          id,
-          userId: pred.userId,
-          matchId,
-          points,
-          createdAt: now,
+        await client.execute({
+          sql: "INSERT INTO user_points (id, user_id, match_id, points, created_at) VALUES (?, ?, ?, ?, ?)",
+          args: [id, pred.user_id, matchId, points, now],
         });
       }
     }
