@@ -23,7 +23,7 @@ async function rawQuery(sql: string, args: (string | number)[] = []): Promise<an
       requests: [
         {
           type: "execute",
-          stmt: { sql, args: args.map((v) => ({ type: v === null ? "null" : typeof v === "number" ? "integer" : "text", value: v })) },
+          stmt: { sql, args: args.map((v) => ({ type: v === null ? "null" : typeof v === "number" ? "integer" : "text", value: v === null ? null : String(v) })) },
         },
       ],
     }),
