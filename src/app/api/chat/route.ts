@@ -94,13 +94,28 @@ export async function POST(req: NextRequest) {
   const id = crypto.randomUUID();
   const now = Math.floor(Date.now() / 1000);
 
+  // Look up user's name from users table (session.user.name may be null or wrong)
+  const userId = (session.user as { id: string }).id ?? session.user.email;
+  let userName = session.user.name ?? null;
+  try {
+    const userResult = await client.execute({
+      sql: "SELECT name FROM users WHERE id = ? LIMIT 1",
+      args: [userId],
+    });
+    if (userResult.rows.length > 0 && userResult.rows[0].name) {
+      userName = userResult.rows[0].name as string;
+    }
+  } catch {
+    // Fall back to session name
+  }
+
   await client.execute({
     sql: `INSERT INTO chat_messages (id, user_id, user_name, user_image, message, created_at)
           VALUES (?, ?, ?, ?, ?, ?)`,
     args: [
       id,
-      (session.user as { id: string }).id ?? session.user.email,
-      session.user.name ?? null,
+      userId,
+      userName,
       session.user.image ?? null,
       message.trim(),
       now,
