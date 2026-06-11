@@ -20,6 +20,7 @@ export async function GET() {
     ],
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await new Promise<any>((resolve, reject) => {
     const url = new URL(`${dbUrl}/v2/pipeline`);
     const req = https.request(

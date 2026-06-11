@@ -22,6 +22,7 @@ async function rawQuery(sql: string, args: { type: string; value: string | numbe
     ],
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await new Promise<any>((resolve, reject) => {
     const url = new URL(`${DB_URL}/v2/pipeline`);
     const req = https.request(
