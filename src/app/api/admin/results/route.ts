@@ -17,7 +17,7 @@ async function rawQuery(sql: string, args: { type: string; value: string | numbe
     requests: [
       {
         type: "execute",
-        stmt: { sql, args },
+        stmt: { sql, args: args.map((a) => ({ type: a.type, value: a.value === null ? null : String(a.value) })) },
       },
     ],
   });
