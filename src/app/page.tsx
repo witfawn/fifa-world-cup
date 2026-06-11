@@ -514,6 +514,7 @@ export default function HomePage() {
                 >
                   Total Points
                 </div>
+              </div>
             </div>
           </div>
         </div>
