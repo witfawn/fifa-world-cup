@@ -5,9 +5,11 @@ export const dynamic = "force-dynamic";
 
 /** GET /api/results — return all match results (public, raw SQL, fresh client) */
 export async function GET() {
+  const dbUrl = process.env.TURSO_DATABASE_URL || "NOT_SET";
+
   // Create a FRESH client per request to avoid stale connection pooling
   const client = createClient({
-    url: process.env.TURSO_DATABASE_URL!,
+    url: dbUrl,
     authToken: process.env.TURSO_AUTH_TOKEN!,
   });
 
@@ -46,6 +48,7 @@ export async function GET() {
       "Cache-Control": "no-store, no-cache, must-revalidate, private",
       "CDN-Cache-Control": "no-store",
       "Vercel-CDN-Cache-Control": "no-store",
+      "X-DB-Url": dbUrl.replace(/\/\/.*@/, "//***@"),
     },
   });
 }
