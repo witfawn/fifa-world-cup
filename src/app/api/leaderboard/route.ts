@@ -87,6 +87,9 @@ export async function GET() {
     pointsByUser.set(up.userId, (pointsByUser.get(up.userId) || 0) + up.points);
   }
 
+  // Count locked games (distinct match_ids in user_points)
+  const lockedGameCount = new Set(allPoints.map((up) => up.matchId)).size;
+
   // Build leaderboard entries
   const entries = usersWithCounts.map((u) => {
     const preds = predictionsByUser.get(u.id) || [];
@@ -136,10 +139,8 @@ export async function GET() {
 
   // Avg per game
   const avgPerGame =
-    currentUserEntry && currentUserEntry.predictionCount > 0
-      ? +(currentUserEntry.totalPoints / currentUserEntry.predictionCount).toFixed(
-          1
-        )
+    currentUserEntry && lockedGameCount > 0
+      ? +(currentUserEntry.totalPoints / lockedGameCount).toFixed(1)
       : 0;
 
   return NextResponse.json(
