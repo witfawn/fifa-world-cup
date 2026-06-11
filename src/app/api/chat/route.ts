@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getClient } from "@/lib/db";
-import { ADMIN_EMAILS } from "@/lib/config";
 
 async function ensureTable() {
   const client = getClient();
@@ -26,16 +25,15 @@ async function ensureTable() {
   } catch {}
 }
 
-// Only allow john@witfawn.com during development
-function isAdmin(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return ADMIN_EMAILS.includes(email);
+// All authenticated users can access chat
+function isAuthed(email: string | null | undefined): boolean {
+  return !!email;
 }
 
 /** GET /api/chat — returns last 100 messages */
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email || !isAdmin(session.user.email)) {
+  if (!session?.user?.email || !isAuthed(session.user.email)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -65,7 +63,7 @@ export async function GET() {
 /** POST /api/chat — send a message */
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email || !isAdmin(session.user.email)) {
+  if (!session?.user?.email || !isAuthed(session.user.email)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

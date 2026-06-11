@@ -26,6 +26,15 @@ const navItems = [
     ),
   },
   {
+    href: "/chat",
+    label: "Chat",
+    icon: (active: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "var(--gold)" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+  },
+  {
     href: "/predict",
     label: "Predict",
     icon: (active: boolean) => (
@@ -215,23 +224,6 @@ export default function Header() {
               </button>
             );
           })}
-
-          {/* Admin-only: Chat — between navItems and Admin */}
-          {isAdmin && (
-            <button
-              onClick={() => handleNav("/chat")}
-              className="w-full flex items-center gap-3 px-5 py-3 transition-colors text-left"
-              style={{
-                color: pathname === "/chat" ? "var(--gold)" : "var(--muted)",
-                backgroundColor: pathname === "/chat" ? "rgba(212, 168, 67, 0.08)" : "transparent",
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill={pathname === "/chat" ? "var(--gold)" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-              <span className="text-sm font-medium">Chat</span>
-            </button>
-          )}
 
           {/* Admin — only visible to admin emails */}
           {isAdmin && (

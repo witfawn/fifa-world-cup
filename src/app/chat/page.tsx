@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useCallback } from "react";
 import Header from "@/components/Header";
 import Avatar from "@/components/Avatar";
-import { ADMIN_EMAILS } from "@/lib/config";
 
 interface ChatMessage {
   id: string;
@@ -26,9 +25,6 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const isAdmin =
-    session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
 
   const currentUserId = (session?.user as { id: string })?.id ?? null;
 
@@ -54,23 +50,23 @@ export default function ChatPage() {
       router.push("/login");
       return;
     }
-    if (status === "authenticated" && isAdmin) {
+    if (status === "authenticated") {
       fetchMessages();
       setLoading(false);
     }
-  }, [status, router, isAdmin, fetchMessages]);
+  }, [status, router, fetchMessages]);
 
   // Refresh on visibility change
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === "visible" && isAdmin) {
+      if (document.visibilityState === "visible") {
         fetchMessages();
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibility);
-  }, [isAdmin, fetchMessages]);
+  }, [fetchMessages]);
 
   // Auto-scroll when messages change
   useEffect(() => {
@@ -168,38 +164,6 @@ export default function ChatPage() {
   }
 
   if (!session) return null;
-
-  // Not admin — access denied
-  if (!isAdmin) {
-    return (
-      <div
-        className="min-h-screen"
-        style={{ backgroundColor: "var(--background)" }}
-      >
-        <Header />
-        <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
-          <div
-            className="rounded-2xl p-8 text-center"
-            style={{
-              backgroundColor: "var(--surface)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <p className="text-4xl mb-3">🚫</p>
-            <h1
-              className="text-xl font-bold mb-2"
-              style={{ color: "var(--foreground)" }}
-            >
-              Access Denied
-            </h1>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>
-              Chat is not available yet.
-            </p>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div
