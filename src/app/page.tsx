@@ -74,7 +74,7 @@ export default function HomePage() {
       Promise.all([
         fetch("/api/profile").then((res) => res.json()),
         fetch("/api/predictions").then((res) => res.json()),
-        fetch("/api/leaderboard").then((res) => res.json()),
+        fetch(`/api/leaderboard?t=${Date.now()}`).then((res) => res.json()),
         fetch("/api/payment")
           .then((res) => res.json())
           .catch(() => ({ payment: null })),

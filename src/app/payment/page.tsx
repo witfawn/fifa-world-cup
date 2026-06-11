@@ -66,7 +66,7 @@ export default function PaymentPage() {
     if (status === 'authenticated') {
       Promise.all([
         fetch('/api/payment').then((r) => (r.ok ? r.json() : null)),
-        fetch('/api/leaderboard').then((r) => (r.ok ? r.json() : null)),
+        fetch(`/api/leaderboard?t=${Date.now()}`).then((r) => (r.ok ? r.json() : null)),
       ])
         .then(([paymentData, lbData]) => {
           setPayment(paymentData?.payment ?? null);

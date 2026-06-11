@@ -39,7 +39,7 @@ export default function AdminPage() {
   const fetchPayments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/payments');
+      const res = await fetch(`/api/admin/payments?t=${Date.now()}`);
       if (res.ok) {
         const json = await res.json();
         setData(json);
