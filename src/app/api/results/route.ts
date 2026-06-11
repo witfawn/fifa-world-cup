@@ -4,10 +4,11 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/results — return all match results
- * Uses raw Turso HTTP API (bypasses @libsql/client caching)
+ * Uses raw Turso HTTPS API (bypasses libsql edge caching)
  */
 export async function GET() {
-  const dbUrl = process.env.TURSO_DATABASE_URL!;
+  // Convert libsql:// to https:// to hit primary DB directly (edge proxy is stale)
+  const dbUrl = (process.env.TURSO_DATABASE_URL || "").replace("libsql://", "https://");
   const authToken = process.env.TURSO_AUTH_TOKEN!;
 
   // Ensure table exists

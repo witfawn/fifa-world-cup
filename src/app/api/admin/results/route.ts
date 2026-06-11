@@ -7,7 +7,8 @@ import { getAllMatches } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
 
-const DB_URL = process.env.TURSO_DATABASE_URL!;
+// Convert libsql:// to https:// to hit primary DB directly (edge proxy is stale)
+const DB_URL = (process.env.TURSO_DATABASE_URL || "").replace("libsql://", "https://");
 const AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN!;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
