@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
@@ -39,6 +40,7 @@ function getMedal(rank: number): string | null {
 
 export default function LeaderboardPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -243,8 +245,11 @@ export default function LeaderboardPage() {
                       {medal || `#${entry.rank}`}
                     </div>
 
-                    {/* Avatar + Name */}
-                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    {/* Avatar + Name (clickable) */}
+                    <div
+                      className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer"
+                      onClick={() => router.push(`/picks/${entry.id}`)}
+                    >
                       <Avatar
                         image={entry.image}
                         name={entry.name}
