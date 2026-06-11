@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 const DB_URL = process.env.TURSO_DATABASE_URL!;
 const AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN!;
 
-async function rawQuery(sql: string, args: (string | number)[] = []): Promise<any> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function rawQuery(sql: string, args: (string | number)[] = []): Promise<any[]> {
   const res = await fetch(`${DB_URL}/v2/pipeline`, {
     method: "POST",
     headers: {
