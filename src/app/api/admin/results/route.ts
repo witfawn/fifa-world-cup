@@ -1,48 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getClient } from "@/lib/db";
 import { ADMIN_EMAILS } from "@/lib/config";
 import { calculatePoints, getMatchType } from "@/lib/scoring";
 import { getAllMatches } from "@/lib/schedule";
 
-async function ensureTable() {
-  const client = getClient();
-  try {
-    await client.execute(`
-      CREATE TABLE IF NOT EXISTS match_results (
-        id TEXT PRIMARY KEY,
-        match_id INTEGER NOT NULL UNIQUE,
-        home_score INTEGER NOT NULL,
-        away_score INTEGER NOT NULL,
-        is_locked INTEGER NOT NULL DEFAULT 0,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `);
-  } catch {}
-  try {
-    await client.execute(
-      "CREATE INDEX IF NOT EXISTS idx_match_results_match_id ON match_results(match_id)"
-    );
-  } catch {}
-  try {
-    await client.execute(`
-      CREATE TABLE IF NOT EXISTS user_points (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        match_id INTEGER NOT NULL,
-        points INTEGER NOT NULL DEFAULT 0,
-        created_at INTEGER NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      )
-    `);
-  } catch {}
-  try {
-    await client.execute(
-      "CREATE UNIQUE INDEX IF NOT EXISTS points_user_match_idx ON user_points(user_id, match_id)"
-    );
-  } catch {}
+export const dynamic = "force-dynamic";
+
+const DB_URL = process.env.TURSO_DATABASE_URL!;
+const AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN!;
+
+async function rawQuery(sql: string, args: (string | number)[] = []): Promise<any> {
+  const res = await fetch(`${DB_URL}/v2/pipeline`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${AUTH_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          type: "execute",
+          stmt: { sql, args: args.map((v) => ({ type: v === null ? "null" : typeof v === "number" ? "integer" : "text", value: v })) },
+        },
+      ],
+    }),
+  });
+  const data = await res.json();
+  return data.results?.[0]?.response?.result?.rows || [];
 }
 
 function isAdmin(email: string | null | undefined): boolean {
@@ -52,10 +37,7 @@ function isAdmin(email: string | null | undefined): boolean {
 
 /**
  * POST /api/admin/results
- * Body: { matchId: number, homeScore: number, awayScore: number, isLocked?: boolean }
- *
- * Creates or updates the score for a match.
- * When isLocked is set to true, runs scoring engine for all predictions on that match.
+ * Uses raw Turso HTTP API for both reads and writes (bypasses @libsql/client caching)
  */
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -63,7 +45,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  await ensureTable();
+  // Ensure table exists
+  await rawQuery(`CREATE TABLE IF NOT EXISTS match_results (
+    id TEXT PRIMARY KEY, match_id INTEGER NOT NULL UNIQUE,
+    home_score INTEGER NOT NULL, away_score INTEGER NOT NULL,
+    is_locked INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+  )`);
 
   const body = await req.json();
   const { matchId, homeScore, awayScore, isLocked } = body;
@@ -75,56 +63,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid scores" }, { status: 400 });
   }
 
-  const client = getClient();
   const now = Math.floor(Date.now() / 1000);
 
-  // Check if existing result exists (raw SQL)
-  const existingResult = await client.execute({
-    sql: "SELECT id, is_locked FROM match_results WHERE match_id = ? LIMIT 1",
-    args: [matchId],
-  });
+  // Check existing
+  const existingRows = await rawQuery(
+    "SELECT id, is_locked FROM match_results WHERE match_id = ?1 LIMIT 1",
+    [matchId]
+  );
 
   let locked = false;
 
-  if (existingResult.rows.length > 0) {
-    // Update existing
-    const existingId = existingResult.rows[0].id;
-    const existingLocked = existingResult.rows[0].is_locked;
+  if (existingRows.length > 0) {
+    const existingId = existingRows[0][0]?.value;
+    const existingLocked = existingRows[0][4]?.value;
     locked = isLocked ?? (existingLocked === 1);
 
-    await client.execute({
-      sql: "UPDATE match_results SET home_score = ?, away_score = ?, is_locked = ?, updated_at = ? WHERE id = ?",
-      args: [homeScore, awayScore, locked ? 1 : 0, now, existingId],
-    });
+    await rawQuery(
+      "UPDATE match_results SET home_score = ?1, away_score = ?2, is_locked = ?3, updated_at = ?4 WHERE id = ?5",
+      [homeScore, awayScore, locked ? 1 : 0, now, existingId]
+    );
   } else {
-    // Insert new
     const id = crypto.randomUUID();
     locked = isLocked ?? false;
-
-    await client.execute({
-      sql: "INSERT INTO match_results (id, match_id, home_score, away_score, is_locked, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      args: [id, matchId, homeScore, awayScore, locked ? 1 : 0, now, now],
-    });
+    await rawQuery(
+      "INSERT INTO match_results (id, match_id, home_score, away_score, is_locked, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+      [id, matchId, homeScore, awayScore, locked ? 1 : 0, now, now]
+    );
   }
 
   // If locking, run scoring engine
   if (locked) {
-    // Determine match type (group vs knockout) from schedule
     const scheduleMatch = getAllMatches().find((m) => m.id === matchId);
     const matchType = scheduleMatch ? getMatchType(scheduleMatch.group) : "group";
 
-    // Get all predictions for this match (raw SQL)
-    const predictionsResult = await client.execute({
-      sql: "SELECT user_id, home_score, away_score FROM match_predictions WHERE match_id = ?",
-      args: [matchId],
-    });
+    // Get all predictions for this match
+    const predRows = await rawQuery(
+      "SELECT user_id, home_score, away_score FROM match_predictions WHERE match_id = ?1",
+      [matchId]
+    );
 
-    // Calculate and upsert points for each user
-    for (const pred of predictionsResult.rows) {
-      const predHome = pred.home_score;
-      const predAway = pred.away_score;
-
-      // Skip users with no prediction — they get 0 points
+    for (const pred of predRows) {
+      const predHome = pred[1]?.value;
+      const predAway = pred[2]?.value;
       if (predHome === null || predHome === undefined || predAway === null || predAway === undefined) continue;
 
       const points = calculatePoints(
@@ -133,23 +113,22 @@ export async function POST(req: NextRequest) {
         matchType
       );
 
-      // Upsert user points (raw SQL)
-      const existingPoints = await client.execute({
-        sql: "SELECT id FROM user_points WHERE user_id = ? AND match_id = ? LIMIT 1",
-        args: [pred.user_id, matchId],
-      });
+      const existingPoints = await rawQuery(
+        "SELECT id FROM user_points WHERE user_id = ?1 AND match_id = ?2 LIMIT 1",
+        [String(pred[0]?.value), matchId]
+      );
 
-      if (existingPoints.rows.length > 0) {
-        await client.execute({
-          sql: "UPDATE user_points SET points = ?, created_at = ? WHERE id = ?",
-          args: [points, now, existingPoints.rows[0].id],
-        });
+      if (existingPoints.length > 0) {
+        await rawQuery(
+          "UPDATE user_points SET points = ?1, created_at = ?2 WHERE id = ?3",
+          [points, now, existingPoints[0][0]?.value]
+        );
       } else {
         const id = crypto.randomUUID();
-        await client.execute({
-          sql: "INSERT INTO user_points (id, user_id, match_id, points, created_at) VALUES (?, ?, ?, ?, ?)",
-          args: [id, pred.user_id, matchId, points, now],
-        });
+        await rawQuery(
+          "INSERT INTO user_points (id, user_id, match_id, points, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+          [id, String(pred[0]?.value), matchId, points, now]
+        );
       }
     }
   }
