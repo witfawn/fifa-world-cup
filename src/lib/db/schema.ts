@@ -130,3 +130,45 @@ export const payments = sqliteTable("payments", {
 
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
+
+// Match results entered by admin
+export const matchResults = sqliteTable("match_results", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  matchId: integer("match_id").notNull().unique(),
+  homeScore: integer("home_score").notNull(),
+  awayScore: integer("away_score").notNull(),
+  isLocked: integer("is_locked", { mode: "boolean" })
+    .notNull()
+    .$defaultFn(() => false),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export type MatchResult = typeof matchResults.$inferSelect;
+export type NewMatchResult = typeof matchResults.$inferInsert;
+
+// Per-user points per match (calculated when game is locked)
+export const userPoints = sqliteTable("user_points", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  matchId: integer("match_id").notNull(),
+  points: integer("points").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+}, (t) => ({
+  userMatchIdx: uniqueIndex("points_user_match_idx").on(t.userId, t.matchId),
+}));
+
+export type UserPoint = typeof userPoints.$inferSelect;
+export type NewUserPoint = typeof userPoints.$inferInsert;

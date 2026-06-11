@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getDb, getClient } from "@/lib/db";
-import { users, matchPredictions, payments } from "@/lib/db/schema";
+import { users, matchPredictions, payments, userPoints } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
 import { eq, count, and } from "drizzle-orm";
 
 let migrated = false;
@@ -64,8 +66,9 @@ export async function GET() {
     )
     .groupBy(users.id);
 
-  // For each user, fetch their predictions and calculate points
+  // For each user, fetch their predictions and calculate points from user_points table
   const allPredictions = await db.select().from(matchPredictions);
+  const allPoints = await db.select().from(userPoints);
 
   // Group predictions by userId
   const predictionsByUser = new Map<
@@ -78,20 +81,21 @@ export async function GET() {
     predictionsByUser.set(p.userId, list);
   }
 
+  // Group points by userId
+  const pointsByUser = new Map<string, number>();
+  for (const up of allPoints) {
+    pointsByUser.set(up.userId, (pointsByUser.get(up.userId) || 0) + up.points);
+  }
+
   // Build leaderboard entries
-  // For now, actual results are all null (tournament hasn't started),
-  // so all points will be 0. The scoring function is ready for when results come in.
   const entries = usersWithCounts.map((u) => {
     const preds = predictionsByUser.get(u.id) || [];
-    const totalPoints = 0;
+    const totalPoints = pointsByUser.get(u.id) || 0;
     let picksWithScores = 0;
 
     for (const p of preds) {
       if (p.homeScore !== null && p.awayScore !== null) {
         picksWithScores++;
-        // When actual results exist (e.g. a `match_results` table or JSON),
-        // we'd look them up here. For now, no actuals → 0 points.
-        // totalPoints += calculatePoints(p.homeScore, p.awayScore, actualHome, actualAway);
       }
     }
 

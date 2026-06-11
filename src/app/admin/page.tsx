@@ -6,6 +6,8 @@ import { useEffect, useState, useCallback } from 'react';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { ADMIN_EMAILS } from '@/lib/config';
+import { getAllMatches } from '@/lib/schedule';
+import { getTeamFlag } from '@/lib/teams';
 
 interface PaymentRecord {
   id: string;
@@ -25,6 +27,14 @@ interface UserPayment {
   payment: PaymentRecord | null;
 }
 
+interface MatchResult {
+  id: string;
+  matchId: number;
+  homeScore: number;
+  awayScore: number;
+  isLocked: boolean;
+}
+
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -32,6 +42,29 @@ export default function AdminPage() {
   const [data, setData] = useState<UserPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
+
+  // Match results state
+  const allMatches = getAllMatches();
+  const [results, setResults] = useState<MatchResult[]>([]);
+  const [scores, setScores] = useState<Record<number, { home: string; away: string }>>({});
+  const [savingMatch, setSavingMatch] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const fetchResults = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/results?t=${Date.now()}`);
+      if (res.ok) {
+        const json = await res.json();
+        setResults(json);
+        // Pre-fill score inputs
+        const map: Record<number, { home: string; away: string }> = {};
+        for (const r of json as MatchResult[]) {
+          map[r.matchId] = { home: String(r.homeScore), away: String(r.awayScore) };
+        }
+        setScores(map);
+      }
+    } catch {}
+  }, []);
 
   const isAdmin =
     session?.user?.email && ADMIN_EMAILS.includes(session.user.email);
@@ -58,8 +91,9 @@ export default function AdminPage() {
     }
     if (status === 'authenticated' && isAdmin) {
       fetchPayments();
+      fetchResults();
     }
-  }, [status, router, isAdmin, fetchPayments]);
+  }, [status, router, isAdmin, fetchPayments, fetchResults]);
 
   const handleToggle = async (userId: string, currentlyPaid: boolean) => {
     setToggling(userId);
@@ -93,6 +127,53 @@ export default function AdminPage() {
   const paidCount = data.filter(
     (d) => d.payment?.status === 'confirmed'
   ).length;
+
+  const handleSaveScore = async (matchId: number, lock: boolean) => {
+    setSavingMatch(matchId);
+    setSaveError(null);
+    try {
+      const s = scores[matchId] || { home: '0', away: '0' };
+      const home = parseInt(s.home) || 0;
+      const away = parseInt(s.away) || 0;
+      const res = await fetch('/api/admin/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ matchId, homeScore: home, awayScore: away, isLocked: lock }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Save failed' }));
+        setSaveError(err.error || `HTTP ${res.status}`);
+        return;
+      }
+      // Update local state directly instead of re-fetching
+      setResults((prev) => {
+        const existing = prev.find((r) => r.matchId === matchId);
+        if (existing) {
+          return prev.map((r) =>
+            r.matchId === matchId ? { ...r, homeScore: home, awayScore: away, isLocked: lock } : r
+          );
+        }
+        return [...prev, { id: crypto.randomUUID(), matchId, homeScore: home, awayScore: away, isLocked: lock, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }];
+      });
+      setScores((prev) => ({ ...prev, [matchId]: { home: String(home), away: String(away) } }));
+    } catch {
+      setSaveError('Network error');
+    } finally {
+      setSavingMatch(null);
+    }
+  };
+
+  const getResult = (matchId: number) => results.find((r) => r.matchId === matchId);
+
+  // Split matches into unlocked and locked
+  const unlockedMatches = allMatches.filter((m) => {
+    const r = getResult(m.id);
+    return !r?.isLocked;
+  });
+  const lockedMatches = allMatches.filter((m) => {
+    const r = getResult(m.id);
+    return r?.isLocked;
+  });
 
   if (status === 'loading' || (status === 'authenticated' && loading)) {
     return (
@@ -311,6 +392,180 @@ export default function AdminPage() {
               })}
           </div>
         )}
+
+        {/* ==================== MATCH RESULTS ==================== */}
+        <div className="mt-8 mb-4">
+          <div
+            className="rounded-2xl p-6 mb-4"
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+          >
+            <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--foreground)' }}>
+              ⚽ Match Results
+            </h2>
+            <p className="text-sm" style={{ color: 'var(--muted)' }}>
+              Enter scores and lock games to calculate leaderboard points
+            </p>
+            {saveError && (
+              <p className="text-xs mt-2 font-bold" style={{ color: '#ef4444' }}>
+                ⚠️ {saveError}
+              </p>
+            )}
+          </div>
+
+          {/* Unlocked matches — score entry */}
+          <div className="space-y-2 mb-6">
+            {unlockedMatches.map((match) => {
+              const result = getResult(match.id);
+              const s = scores[match.id] || { home: '', away: '' };
+              const isSaving = savingMatch === match.id;
+
+              return (
+                <div
+                  key={match.id}
+                  className="rounded-xl px-4 py-3"
+                  style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+                >
+                  {/* Match header */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold uppercase" style={{ color: 'var(--muted)' }}>
+                      Group {match.group} · MD{match.matchday}
+                    </span>
+                    <span className="text-[10px]" style={{ color: 'var(--muted)' }}>
+                      {match.date} {match.time_pt}
+                    </span>
+                  </div>
+
+                  {/* Teams + score inputs */}
+                  <div className="flex items-center gap-2">
+                    {/* Home */}
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <span className="text-lg">{getTeamFlag(match.home)}</span>
+                      <span className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>
+                        {match.home.length > 10 ? match.home.split(' ').pop() : match.home}
+                      </span>
+                    </div>
+
+                    {/* Score input */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <input
+                        type="number"
+                        min={0}
+                        max={20}
+                        value={s.home}
+                        onChange={(e) =>
+                          setScores((prev) => ({ ...prev, [match.id]: { ...prev[match.id], home: e.target.value } }))
+                        }
+                        className="w-12 h-10 text-center text-lg font-bold rounded-lg"
+                        style={{
+                          backgroundColor: 'var(--navy-light)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--foreground)',
+                        }}
+                      />
+                      <span className="text-sm font-bold" style={{ color: 'var(--muted)' }}>—</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={20}
+                        value={s.away}
+                        onChange={(e) =>
+                          setScores((prev) => ({ ...prev, [match.id]: { ...prev[match.id], away: e.target.value } }))
+                        }
+                        className="w-12 h-10 text-center text-lg font-bold rounded-lg"
+                        style={{
+                          backgroundColor: 'var(--navy-light)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--foreground)',
+                        }}
+                      />
+                    </div>
+
+                    {/* Away */}
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+                      <span className="text-xs font-medium truncate text-right" style={{ color: 'var(--foreground)' }}>
+                        {match.away.length > 10 ? match.away.split(' ').pop() : match.away}
+                      </span>
+                      <span className="text-lg">{getTeamFlag(match.away)}</span>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => handleSaveScore(match.id, false)}
+                      disabled={isSaving}
+                      className="flex-1 py-2 rounded-lg text-xs font-bold transition-all"
+                      style={{
+                        backgroundColor: 'var(--navy-light)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--muted)',
+                        opacity: isSaving ? 0.5 : 1,
+                      }}
+                    >
+                      {isSaving ? 'Saving...' : result ? '↻ Update Score' : '💾 Save Score'}
+                    </button>
+                    <button
+                      onClick={() => handleSaveScore(match.id, true)}
+                      disabled={isSaving}
+                      className="flex-1 py-2 rounded-lg text-xs font-bold transition-all"
+                      style={{
+                        backgroundColor: '#22c55e',
+                        color: '#fff',
+                        opacity: isSaving ? 0.5 : 1,
+                      }}
+                    >
+                      {isSaving ? 'Saving...' : '🔒 Lock Final'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Locked matches — read-only */}
+          {lockedMatches.length > 0 && (
+            <div>
+              <h3
+                className="text-xs font-bold uppercase tracking-wider mb-2"
+                style={{ color: 'var(--muted)' }}
+              >
+                🔒 Locked ({lockedMatches.length})
+              </h3>
+              <div className="space-y-2">
+                {lockedMatches.map((match) => {
+                  const s = scores[match.id] || { home: '?', away: '?' };
+                  return (
+                    <div
+                      key={match.id}
+                      className="rounded-xl px-4 py-2 flex items-center justify-between"
+                      style={{
+                        backgroundColor: 'var(--surface)',
+                        border: '1px solid var(--border)',
+                        opacity: 0.7,
+                      }}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">{getTeamFlag(match.home)}</span>
+                        <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>
+                          {match.home.length > 10 ? match.home.split(' ').pop() : match.home}
+                        </span>
+                      </div>
+                      <span className="text-sm font-bold px-3" style={{ color: 'var(--gold)' }}>
+                        {s.home} — {s.away}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium text-right" style={{ color: 'var(--foreground)' }}>
+                          {match.away.length > 10 ? match.away.split(' ').pop() : match.away}
+                        </span>
+                        <span className="text-sm">{getTeamFlag(match.away)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
       <BottomNav />

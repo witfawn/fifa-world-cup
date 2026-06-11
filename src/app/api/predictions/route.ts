@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getDb, getClient } from "@/lib/db";
 import { matchPredictions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { isMatchLocked, getAllMatches } from "@/lib/schedule";
 
 let migrated = false;
 
@@ -88,6 +89,12 @@ export async function POST(req: NextRequest) {
   }
   if (aScore !== null && (typeof aScore !== "number" || aScore < 0 || !Number.isInteger(aScore))) {
     return NextResponse.json({ error: "Invalid awayScore" }, { status: 400 });
+  }
+
+  // Lock check: reject predictions for matches that are within 5 min of kickoff
+  const match = getAllMatches().find((m) => m.id === matchId);
+  if (match && isMatchLocked(match.date, match.time_pt)) {
+    return NextResponse.json({ error: "Match is locked — kickoff is within 5 minutes" }, { status: 409 });
   }
 
   const db = getDb();

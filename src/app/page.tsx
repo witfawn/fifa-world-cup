@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { getTeamFlag } from "@/lib/teams";
@@ -64,12 +64,9 @@ export default function HomePage() {
   const [rank, setRank] = useState<number | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [matchResults, setMatchResults] = useState<Record<number, { homeScore: number; awayScore: number; isLocked: boolean }>>({});
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-      return;
-    }
+  const fetchAllData = useCallback(() => {
     if (status === "authenticated") {
       Promise.all([
         fetch("/api/profile").then((res) => res.json()),
@@ -78,8 +75,11 @@ export default function HomePage() {
         fetch("/api/payment")
           .then((res) => res.json())
           .catch(() => ({ payment: null })),
+        fetch(`/api/results?t=${Date.now()}`)
+          .then((res) => res.json())
+          .catch(() => []),
       ])
-        .then(([profileData, predsData, leaderboardData, paymentData]) => {
+        .then(([profileData, predsData, leaderboardData, paymentData, resultsData]) => {
           setProfile(profileData);
           setPredictions(predsData);
           if (paymentData?.payment?.status) {
@@ -90,11 +90,36 @@ export default function HomePage() {
             (e: LeaderboardEntry) => e.id === currentUserId
           );
           if (entry) setRank(entry.rank);
+          // Build results lookup
+          const rMap: Record<number, { homeScore: number; awayScore: number; isLocked: boolean }> = {};
+          for (const r of resultsData) {
+            rMap[r.matchId] = { homeScore: r.homeScore, awayScore: r.awayScore, isLocked: r.isLocked };
+          }
+          setMatchResults(rMap);
           setLoading(false);
         })
         .catch(() => setLoading(false));
     }
-  }, [status, router, session]);
+  }, [status, session]);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+      return;
+    }
+    fetchAllData();
+  }, [status, router, fetchAllData]);
+
+  // Auto-refresh when user switches back to this tab
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && status === "authenticated") {
+        fetchAllData();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [status, fetchAllData]);
 
   if (status === "loading" || loading) {
     return (
@@ -322,7 +347,9 @@ export default function HomePage() {
             </div>
 
             <div className="space-y-3">
-              {todaysGames.map((match) => (
+              {todaysGames.map((match) => {
+                const result = matchResults[match.id];
+                return (
                 <div
                   key={match.id}
                   className="flex items-center justify-between py-2"
@@ -340,12 +367,29 @@ export default function HomePage() {
                     </span>
                   </div>
                   <div className="flex-shrink-0 mx-3">
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: "var(--muted)" }}
-                    >
-                      {formatTime(match.time_pt)}
-                    </span>
+                    {result ? (
+                      <div className="text-center">
+                        <span
+                          className="text-base font-bold"
+                          style={{ color: result.isLocked ? "var(--gold)" : "var(--foreground)" }}
+                        >
+                          {result.homeScore} — {result.awayScore}
+                          {result.isLocked && <span className="text-[10px] ml-1">✓</span>}
+                        </span>
+                        {!result.isLocked && (
+                          <div className="text-[9px] font-mono uppercase tracking-wider" style={{ color: "var(--muted)" }}>
+                            Not Final
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span
+                        className="text-xs font-medium"
+                        style={{ color: "var(--muted)" }}
+                      >
+                        {formatTime(match.time_pt)}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
                     <span
@@ -359,7 +403,8 @@ export default function HomePage() {
                     <span className="text-lg">{getTeamFlag(match.away)}</span>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : isTournamentStarted ? (

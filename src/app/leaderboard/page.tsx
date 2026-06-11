@@ -45,7 +45,7 @@ export default function LeaderboardPage() {
   const currentUserId = (session?.user as { id: string })?.id;
 
   useEffect(() => {
-    if (status === "authenticated") {
+    const fetchLeaderboard = () => {
       fetch(`/api/leaderboard?t=${Date.now()}`)
         .then((res) => res.json())
         .then((d: LeaderboardResponse) => {
@@ -53,7 +53,20 @@ export default function LeaderboardPage() {
           setLoading(false);
         })
         .catch(() => setLoading(false));
+    };
+
+    if (status === "authenticated") {
+      fetchLeaderboard();
     }
+
+    // Re-fetch when the tab becomes visible (e.g. switching back from admin)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && status === "authenticated") {
+        fetchLeaderboard();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [status]);
 
   if (status === "loading" || loading) {
