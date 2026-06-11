@@ -62,6 +62,7 @@ export default function HomePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [rank, setRank] = useState<number | null>(null);
+  const [totalPoints, setTotalPoints] = useState<number>(0);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [matchResults, setMatchResults] = useState<Record<number, { homeScore: number; awayScore: number; isLocked: boolean }>>({});
@@ -89,7 +90,10 @@ export default function HomePage() {
           const entry = leaderboardData.leaderboard?.find(
             (e: LeaderboardEntry) => e.id === currentUserId
           );
-          if (entry) setRank(entry.rank);
+          if (entry) {
+            setRank(entry.rank);
+            setTotalPoints(entry.totalPoints);
+          }
           // Build results lookup
           const rMap: Record<number, { homeScore: number; awayScore: number; isLocked: boolean }> = {};
           for (const r of resultsData) {
@@ -502,7 +506,7 @@ export default function HomePage() {
                   className="text-lg font-bold"
                   style={{ color: "var(--foreground)" }}
                 >
-                  0
+                  {totalPoints}
                 </div>
                 <div
                   className="text-[10px] uppercase tracking-wider mt-1"
@@ -510,7 +514,6 @@ export default function HomePage() {
                 >
                   Total Points
                 </div>
-              </div>
             </div>
           </div>
         </div>
