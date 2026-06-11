@@ -1,48 +1,68 @@
 import { NextResponse } from "next/server";
+import https from "https";
 
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/results — return all match results
- * Uses @libsql/client with https:// URL to bypass edge caching
+ * Uses Node.js https module directly to bypass Vercel's fetch caching layer
  */
 export async function GET() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createClient } = require("@libsql/client") as typeof import("@libsql/client");
+  const dbUrl = (process.env.TURSO_DATABASE_URL || "").replace("libsql://", "https://");
+  const authToken = process.env.TURSO_AUTH_TOKEN!;
 
-  const client = createClient({
-    url: (process.env.TURSO_DATABASE_URL || "").replace("libsql://", "https://"),
-    authToken: process.env.TURSO_AUTH_TOKEN,
+  const body = JSON.stringify({
+    requests: [
+      {
+        type: "execute",
+        stmt: { sql: "SELECT * FROM match_results" },
+      },
+    ],
   });
 
-  // Ensure table exists
-  try {
-    await client.execute(`
-      CREATE TABLE IF NOT EXISTS match_results (
-        id TEXT PRIMARY KEY,
-        match_id INTEGER NOT NULL UNIQUE,
-        home_score INTEGER NOT NULL,
-        away_score INTEGER NOT NULL,
-        is_locked INTEGER NOT NULL DEFAULT 0,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `);
-  } catch {
-    // Table already exists
-  }
+  const result = await new Promise<any>((resolve, reject) => {
+    const url = new URL(`${dbUrl}/v2/pipeline`);
+    const req = https.request(
+      {
+        hostname: url.hostname,
+        port: 443,
+        path: url.pathname,
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+        },
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (chunk: Buffer) => (data += chunk));
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch {
+            reject(new Error(`Parse error: ${data.slice(0, 200)}`));
+          }
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
 
-  // Query results
-  const result = await client.execute("SELECT * FROM match_results");
+  const rows = result.results?.[0]?.response?.result?.rows || [];
 
-  const results = result.rows.map((row) => ({
-    id: row.id,
-    matchId: Number(row.match_id),
-    homeScore: Number(row.home_score),
-    awayScore: Number(row.away_score),
-    isLocked: Number(row.is_locked) === 1,
-    createdAt: Number(row.created_at),
-    updatedAt: Number(row.updated_at),
+  const results = rows.map((row: { type: string; value: string }[]) => ({
+    id: row[0]?.value,
+    matchId: Number(row[1]?.value),
+    homeScore: Number(row[2]?.value),
+    awayScore: Number(row[3]?.value),
+    isLocked: Number(row[4]?.value) === 1,
+    createdAt: Number(row[5]?.value),
+    updatedAt: Number(row[6]?.value),
   }));
 
   return NextResponse.json(results, {
