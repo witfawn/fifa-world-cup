@@ -76,6 +76,9 @@ export async function GET() {
       "Cache-Control": "no-store, no-cache, must-revalidate, private",
       "CDN-Cache-Control": "no-store",
       "Vercel-CDN-Cache-Control": "no-store",
+      "X-DB-Url": dbUrl,
+      "X-DB-Rows": String(rows.length),
+      "X-Debug-Time": String(Date.now()),
     },
   });
 }
