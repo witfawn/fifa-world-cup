@@ -1,45 +1,72 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@libsql/client";
 
 export const dynamic = "force-dynamic";
 
-/** GET /api/results — return all match results (public, raw SQL, fresh client) */
+/**
+ * GET /api/results — return all match results
+ * Uses raw Turso HTTP API (bypasses @libsql/client caching)
+ */
 export async function GET() {
-  const dbUrl = process.env.TURSO_DATABASE_URL || "NOT_SET";
-
-  // Create a FRESH client per request to avoid stale connection pooling
-  const client = createClient({
-    url: dbUrl,
-    authToken: process.env.TURSO_AUTH_TOKEN!,
-  });
+  const dbUrl = process.env.TURSO_DATABASE_URL!;
+  const authToken = process.env.TURSO_AUTH_TOKEN!;
 
   // Ensure table exists
-  try {
-    await client.execute(`
-      CREATE TABLE IF NOT EXISTS match_results (
-        id TEXT PRIMARY KEY,
-        match_id INTEGER NOT NULL UNIQUE,
-        home_score INTEGER NOT NULL,
-        away_score INTEGER NOT NULL,
-        is_locked INTEGER NOT NULL DEFAULT 0,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `);
-  } catch {}
+  await fetch(`${dbUrl}/v2/pipeline`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          type: "execute",
+          stmt: {
+            sql: `CREATE TABLE IF NOT EXISTS match_results (
+              id TEXT PRIMARY KEY,
+              match_id INTEGER NOT NULL UNIQUE,
+              home_score INTEGER NOT NULL,
+              away_score INTEGER NOT NULL,
+              is_locked INTEGER NOT NULL DEFAULT 0,
+              created_at INTEGER NOT NULL,
+              updated_at INTEGER NOT NULL
+            )`,
+          },
+        },
+      ],
+    }),
+  });
 
-  const result = await client.execute("SELECT * FROM match_results");
+  // Query results
+  const res = await fetch(`${dbUrl}/v2/pipeline`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          type: "execute",
+          stmt: { sql: "SELECT * FROM match_results" },
+        },
+      ],
+    }),
+  });
 
-  const results = result.rows.map((row) => {
-    const r = row as Record<string, unknown>;
+  const data = await res.json();
+  const rows = data.results?.[0]?.response?.result?.rows || [];
+
+  // Map Turso pipeline format to camelCase
+  const results = rows.map((row: { type: string; value: string }[]) => {
     return {
-      id: r.id,
-      matchId: r.match_id,
-      homeScore: r.home_score,
-      awayScore: r.away_score,
-      isLocked: r.is_locked === 1,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
+      id: row[0]?.value,
+      matchId: Number(row[1]?.value),
+      homeScore: Number(row[2]?.value),
+      awayScore: Number(row[3]?.value),
+      isLocked: Number(row[4]?.value) === 1,
+      createdAt: Number(row[5]?.value),
+      updatedAt: Number(row[6]?.value),
     };
   });
 
@@ -48,7 +75,6 @@ export async function GET() {
       "Cache-Control": "no-store, no-cache, must-revalidate, private",
       "CDN-Cache-Control": "no-store",
       "Vercel-CDN-Cache-Control": "no-store",
-      "X-DB-Url": dbUrl.replace(/\/\/.*@/, "//***@"),
     },
   });
 }
