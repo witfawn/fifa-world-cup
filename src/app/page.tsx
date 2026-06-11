@@ -374,7 +374,6 @@ export default function HomePage() {
                           style={{ color: result.isLocked ? "var(--gold)" : "var(--foreground)" }}
                         >
                           {result.homeScore} — {result.awayScore}
-                          {result.isLocked && <span className="text-[10px] ml-1">✓</span>}
                         </span>
                         {!result.isLocked && (
                           <div className="text-[9px] font-mono uppercase tracking-wider" style={{ color: "var(--muted)" }}>
