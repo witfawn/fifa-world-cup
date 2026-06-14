@@ -58,6 +58,7 @@ async function rawQuery(sql: string, args: { type: string; value: string | numbe
 }
 
 /** Fetch recent matches from football-data.org */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchRecentMatches(): Promise<{ data: any; rateLimit: { available: string | null; reset: string | null } }> {
   const now = new Date();
   // Use Pacific Time (PT) for date calculations since the schedule is in PT.
