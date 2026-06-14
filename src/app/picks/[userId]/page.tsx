@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
@@ -55,9 +55,9 @@ function formatDate(dateStr: string): string {
 export default function UserPicksPage({
   params,
 }: {
-  params: Promise<{ userId: string }>;
+  params: { userId: string };
 }) {
-  const { userId } = use(params);
+  const { userId } = params;
   const router = useRouter();
   const { status } = useSession();
 

@@ -15,6 +15,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/api/cron",
   "/api/debug",
   "/api/results",
+  "/api/cron",
 ];
 
 export async function middleware(req: NextRequest) {

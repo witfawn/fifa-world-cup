@@ -24,13 +24,20 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const currentUserId = (session?.user as { id: string })?.id ?? null;
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  };
+
+  const resizeTextarea = () => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  };
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -78,6 +85,7 @@ export default function ChatPage() {
 
     const text = input.trim();
     setInput("");
+    resizeTextarea();
     setSending(true);
 
     // Optimistic: add message to UI immediately
@@ -281,12 +289,14 @@ export default function ChatPage() {
           borderColor: "var(--border)",
         }}
       >
-        <div className="max-w-2xl mx-auto flex gap-2 items-center">
-          <input
+        <div className="max-w-2xl mx-auto flex gap-2 items-end">
+          <textarea
             ref={inputRef}
-            type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              resizeTextarea();
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -295,11 +305,13 @@ export default function ChatPage() {
             }}
             placeholder="Type a message..."
             maxLength={2000}
-            className="flex-1 px-4 py-2.5 rounded-full text-sm outline-none"
+            rows={1}
+            className="flex-1 px-4 py-2.5 rounded-2xl text-sm outline-none resize-none"
             style={{
               backgroundColor: "var(--surface)",
               border: "1px solid var(--border)",
               color: "var(--foreground)",
+              maxHeight: "120px",
             }}
           />
           <button

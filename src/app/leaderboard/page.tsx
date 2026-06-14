@@ -195,7 +195,7 @@ export default function LeaderboardPage() {
             border: "1px solid var(--border)",
           }}
         >
-          <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+          <div className="px-5 pt-5 pb-2 flex items-center justify-between">
             <h2
               className="text-xs font-bold uppercase tracking-wider"
               style={{ color: "var(--muted)" }}
@@ -205,6 +205,14 @@ export default function LeaderboardPage() {
             <span className="text-xs" style={{ color: "var(--muted)" }}>
               {totalPlayers} player{totalPlayers !== 1 ? "s" : ""}
             </span>
+          </div>
+          <div className="px-5 pb-3">
+            <p
+              className="text-[11px] italic"
+              style={{ color: "var(--muted)" }}
+            >
+              Tap a name to see their picks
+            </p>
           </div>
 
           {leaderboard.length === 0 ? (

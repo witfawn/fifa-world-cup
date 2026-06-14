@@ -9,17 +9,6 @@ const DB_URL = (process.env.TURSO_DATABASE_URL || "").replace("libsql://", "http
 const AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN!;
 const FD_API_KEY = process.env.FOOTBALL_DATA_API_KEY || "";
 
-// Reconcile football-data.org team names → our schedule.json names
-// football-data.org uses FIFA's official naming conventions
-const TEAM_NAME_MAP: Record<string, string> = {
-  "Korea Republic": "South Korea",
-  "DR Congo": "Congo DR",
-  "Côte d'Ivoire": "Ivory Coast",
-  "Cabo Verde": "Cape Verde",
-  "Bosnia and Herzegovina": "Bosnia-Herzegovina",
-  "Türkiye": "Türkiye", // explicit — some APIs use "Turkey"
-};
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function rawQuery(sql: string, args: { type: string; value: string | number | null }[] = []): Promise<any[]> {
   const body = JSON.stringify({
@@ -69,52 +58,34 @@ async function rawQuery(sql: string, args: { type: string; value: string | numbe
 }
 
 /** Fetch recent matches from football-data.org */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchRecentMatches(): Promise<{ data: any; rateLimit: { available: string | null; reset: string | null } }> {
+async function fetchRecentMatches() {
   const now = new Date();
-  // Use Pacific Time (PT) for date calculations since the schedule is in PT.
-  // UTC rolls over at 5 PM PT, which would skip same-day PT matches.
-  const ptToday = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-  // Look back 1 day so any downtime doesn't permanently miss finished matches
-  const dateFrom = new Date(ptToday.getTime() - 1 * 86400000).toISOString().slice(0, 10);
+  const today = now.toISOString().slice(0, 10);
   // dateTo is exclusive — add 2 days to cover today + tomorrow
-  const dateTo = new Date(ptToday.getTime() + 2 * 86400000).toISOString().slice(0, 10);
+  const tomorrow = new Date(now.getTime() + 2 * 86400000).toISOString().slice(0, 10);
 
-  const url = `https://api.football-data.org/v4/competitions/2000/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`;
+  const url = `https://api.football-data.org/v4/competitions/2000/matches?dateFrom=${today}&dateTo=${tomorrow}`;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25000);
-  try {
-    const res = await fetch(url, {
-      headers: { "X-Auth-Token": FD_API_KEY },
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+  const res = await fetch(url, {
+    headers: { "X-Auth-Token": FD_API_KEY },
+    cache: "no-store",
+  });
 
-    if (!res.ok) {
-      throw new Error(`Football-data.org API error: ${res.status} ${await res.text()}`);
-    }
-
-    const rateLimit = {
-      available: res.headers.get("x-requests-available"),
-      reset: res.headers.get("x-request-counter-reset"),
-    };
-    const data = await res.json();
-    return { data, rateLimit };
-  } catch (error) {
-    clearTimeout(timeout);
-    throw error;
+  if (!res.ok) {
+    throw new Error(`Football-data.org API error: ${res.status} ${await res.text()}`);
   }
+
+  return res.json();
 }
 
-/** Map API match to our internal match ID using team names */
+/** Map API match to our internal match ID using team names + date */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapToInternalMatch(apiMatch: any): number | null {
   const schedule = getAllMatches();
-  const homeName = TEAM_NAME_MAP[apiMatch.homeTeam.name] || apiMatch.homeTeam.name;
-  const awayName = TEAM_NAME_MAP[apiMatch.awayTeam.name] || apiMatch.awayTeam.name;
+  const homeName = apiMatch.homeTeam.name;
+  const awayName = apiMatch.awayTeam.name;
 
+  // Match on team names only — dates may differ due to UTC vs PT
   const match = schedule.find(
     (m) => m.home === homeName && m.away === awayName
   );
@@ -234,17 +205,15 @@ async function scoreMatch(matchId: number, homeScore: number, awayScore: number)
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(_req: NextRequest) {
-  let rateLimit = { available: null as string | null, reset: null as string | null };
   try {
-    const { data, rateLimit: rl } = await fetchRecentMatches();
-    rateLimit = rl;
+    const data = await fetchRecentMatches();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const matches: any[] = data.matches || [];
 
     const results = [];
 
     for (const apiMatch of matches) {
-      if (apiMatch.status !== "FINISHED" && apiMatch.status !== "AWARDED") continue;
+      if (apiMatch.status !== "FINISHED") continue;
 
       const internalId = mapToInternalMatch(apiMatch);
       if (internalId === null) {
@@ -276,8 +245,6 @@ export async function GET(_req: NextRequest) {
       });
     }
 
-    // Log rate limit info for monitoring
-    console.log(`[score-sync] Rate limit: ${rateLimit.available} requests remaining, resets in ${rateLimit.reset}s`);
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
