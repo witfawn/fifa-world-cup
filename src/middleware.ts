@@ -12,6 +12,7 @@ const PUBLIC_PATHS = [
 const PUBLIC_PATH_PREFIXES = [
   "/payment",
   "/api/auth",
+  "/api/cron",
   "/api/debug",
   "/api/results",
 ];
