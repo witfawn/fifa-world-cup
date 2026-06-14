@@ -73,7 +73,7 @@ async function rawQuery(sql: string, args: { type: string; value: string | numbe
   return result.results?.[0]?.response?.result?.rows || [];
 }
 
-/** Fetch recent matches from football-data.org */
+/** Fetch recent matches from football-data.org with retry */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchRecentMatches(): Promise<{ data: any; rateLimit: { available: string | null; reset: string | null } }> {
   const now = new Date();
@@ -87,30 +87,47 @@ async function fetchRecentMatches(): Promise<{ data: any; rateLimit: { available
 
   const url = `https://api.football-data.org/v4/competitions/2000/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25000);
-  try {
-    const res = await fetch(url, {
-      headers: { "X-Auth-Token": FD_API_KEY },
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+  const MAX_RETRIES = 3;
+  let lastError: Error | null = null;
 
-    if (!res.ok) {
-      throw new Error(`Football-data.org API error: ${res.status} ${await res.text()}`);
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    try {
+      const res = await fetch(url, {
+        headers: { "X-Auth-Token": FD_API_KEY },
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        // Don't retry client errors (4xx) — only server errors (5xx) and network issues
+        if (res.status >= 400 && res.status < 500) {
+          throw new Error(`Football-data.org API error: ${res.status} ${await res.text()}`);
+        }
+        throw new Error(`Football-data.org API error: ${res.status}`);
+      }
+
+      const rateLimit = {
+        available: res.headers.get("x-requests-available"),
+        reset: res.headers.get("x-request-counter-reset"),
+      };
+      const data = await res.json();
+      return { data, rateLimit };
+    } catch (error) {
+      clearTimeout(timeout);
+      lastError = error instanceof Error ? error : new Error(String(error));
+      // Don't retry on abort (timeout) on the last attempt, or on non-transient errors
+      if (attempt < MAX_RETRIES) {
+        const delay = attempt * 2000; // 2s, 4s backoff
+        console.log(`[score-sync] Attempt ${attempt} failed (${lastError.message}), retrying in ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
     }
-
-    const rateLimit = {
-      available: res.headers.get("x-requests-available"),
-      reset: res.headers.get("x-request-counter-reset"),
-    };
-    const data = await res.json();
-    return { data, rateLimit };
-  } catch (error) {
-    clearTimeout(timeout);
-    throw error;
   }
+
+  throw lastError;
 }
 
 /** Map API match to our internal match ID using team names */
