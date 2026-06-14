@@ -60,9 +60,12 @@ async function rawQuery(sql: string, args: { type: string; value: string | numbe
 /** Fetch recent matches from football-data.org */
 async function fetchRecentMatches(): Promise<{ data: any; rateLimit: { available: string | null; reset: string | null } }> {
   const now = new Date();
-  const today = now.toISOString().slice(0, 10);
+  // Use Pacific Time (PT) for date calculations since the schedule is in PT.
+  // UTC rolls over at 5 PM PT, which would skip same-day PT matches.
+  const ptToday = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  const today = ptToday.toISOString().slice(0, 10);
   // dateTo is exclusive — add 2 days to cover today + tomorrow
-  const tomorrow = new Date(now.getTime() + 2 * 86400000).toISOString().slice(0, 10);
+  const tomorrow = new Date(ptToday.getTime() + 2 * 86400000).toISOString().slice(0, 10);
 
   const url = `https://api.football-data.org/v4/competitions/2000/matches?dateFrom=${today}&dateTo=${tomorrow}`;
 
