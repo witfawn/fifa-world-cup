@@ -83,7 +83,7 @@ async function fetchRecentMatches(): Promise<{ data: any; rateLimit: { available
   const url = `https://api.football-data.org/v4/competitions/2000/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 25000);
   try {
     const res = await fetch(url, {
       headers: { "X-Auth-Token": FD_API_KEY },
