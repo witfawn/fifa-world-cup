@@ -17,7 +17,8 @@ const TEAM_NAME_MAP: Record<string, string> = {
   "Côte d'Ivoire": "Ivory Coast",
   "Cabo Verde": "Cape Verde",
   "Bosnia and Herzegovina": "Bosnia-Herzegovina",
-  "Türkiye": "Türkiye", // explicit — some APIs use "Turkey"
+  "Türkiye": "Türkiye",
+  "Turkey": "Türkiye",
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
