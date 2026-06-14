@@ -19,6 +19,10 @@ const TEAM_NAME_MAP: Record<string, string> = {
   "Bosnia and Herzegovina": "Bosnia-Herzegovina",
   "Türkiye": "Türkiye",
   "Turkey": "Türkiye",
+  "Czech Republic": "Czechia",
+  "IR Iran": "Iran",
+  "Curacao": "Curaçao",
+  "USA": "United States",
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -116,11 +120,25 @@ function mapToInternalMatch(apiMatch: any): number | null {
   const homeName = TEAM_NAME_MAP[apiMatch.homeTeam.name] || apiMatch.homeTeam.name;
   const awayName = TEAM_NAME_MAP[apiMatch.awayTeam.name] || apiMatch.awayTeam.name;
 
+  // Exact match first
   const match = schedule.find(
     (m) => m.home === homeName && m.away === awayName
   );
+  if (match) return match.id;
 
-  return match ? match.id : null;
+  // Fuzzy fallback: case-insensitive, handles minor spelling differences
+  const homeLower = homeName.toLowerCase();
+  const awayLower = awayName.toLowerCase();
+  const fuzzyMatch = schedule.find((m) => {
+    const mHome = m.home.toLowerCase();
+    const mAway = m.away.toLowerCase();
+    return (
+      (mHome.includes(homeLower) || homeLower.includes(mHome)) &&
+      (mAway.includes(awayLower) || awayLower.includes(mAway))
+    );
+  });
+
+  return fuzzyMatch ? fuzzyMatch.id : null;
 }
 
 /** Ensure match_results row exists, return whether it was already locked */
