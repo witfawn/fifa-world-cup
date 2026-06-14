@@ -280,8 +280,6 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("Score sync error:", msg);
-    // Log rate limit info for monitoring
-    console.log(`[score-sync] Rate limit: ${rateLimit.available} requests remaining, resets in ${rateLimit.reset}s`);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
