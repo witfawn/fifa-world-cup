@@ -213,25 +213,11 @@ async function scoreMatch(matchId: number, homeScore: number, awayScore: number)
  * Fetches finished matches from football-data.org and auto-scores them.
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const { data, rateLimit } = await fetchRecentMatches();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const matches: any[] = data.matches || [];
-
-    // Debug: return raw match data when ?debug=1
-    const debug = req.nextUrl.searchParams.get("debug");
-    if (debug) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const debugMatches = matches.map((m: any) => ({
-        home: m.homeTeam?.name,
-        away: m.awayTeam?.name,
-        status: m.status,
-        date: m.utcDate,
-        score: m.score?.fullTime,
-      }));
-      return NextResponse.json({ totalMatches: matches.length, matches: debugMatches, rateLimit });
-    }
 
     const results = [];
 
