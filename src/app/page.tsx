@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { getTeamFlag } from "@/lib/teams";
+import { getTeamFlag, shortenTeamName } from "@/lib/teams";
 import {
   getAllMatches,
   getUpcomingMatches,
@@ -269,9 +269,7 @@ export default function HomePage() {
                   className="text-sm font-semibold"
                   style={{ color: "var(--foreground)" }}
                 >
-                  {nextMatch.home.length > 10
-                    ? nextMatch.home.split(" ").pop()
-                    : nextMatch.home}
+                  {shortenTeamName(nextMatch.home)}
                 </div>
               </div>
 
@@ -291,9 +289,7 @@ export default function HomePage() {
                   className="text-sm font-semibold"
                   style={{ color: "var(--foreground)" }}
                 >
-                  {nextMatch.away.length > 10
-                    ? nextMatch.away.split(" ").pop()
-                    : nextMatch.away}
+                  {shortenTeamName(nextMatch.away)}
                 </div>
               </div>
             </div>
@@ -365,9 +361,7 @@ export default function HomePage() {
                       className="text-sm font-medium truncate"
                       style={{ color: "var(--foreground)" }}
                     >
-                      {match.home.length > 10
-                        ? match.home.split(" ").pop()
-                        : match.home}
+                      {shortenTeamName(match.home)}
                     </span>
                   </div>
                   <div className="flex-shrink-0 mx-3">
@@ -399,9 +393,7 @@ export default function HomePage() {
                       className="text-sm font-medium truncate text-right"
                       style={{ color: "var(--foreground)" }}
                     >
-                      {match.away.length > 10
-                        ? match.away.split(" ").pop()
-                        : match.away}
+                      {shortenTeamName(match.away)}
                     </span>
                     <span className="text-lg">{getTeamFlag(match.away)}</span>
                   </div>

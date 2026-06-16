@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { getTeamFlag } from "@/lib/teams";
+import { getTeamFlag, shortenTeamName } from "@/lib/teams";
 import { isMatchLocked, formatKickoff, formatCountdown } from "@/lib/schedule";
 import ScoreInput from "./ScoreInput";
 import type { Match } from "@/lib/schedule";
@@ -57,25 +57,8 @@ export default function MatchCard({ match, prediction, onSave }: MatchCardProps)
   const homeFlag = getTeamFlag(match.home);
   const awayFlag = getTeamFlag(match.away);
 
-  // Shorten team names for mobile
-  const shortenName = (name: string): string => {
-    const shortNames: Record<string, string> = {
-      "Bosnia-Herzegovina": "Bosnia",
-      "United States": "USA",
-      "South Korea": "S. Korea",
-      "South Africa": "S. Africa",
-      "Cape Verde": "Cape Verde",
-      "Congo DR": "DR Congo",
-      "Saudi Arabia": "Saudi",
-      "New Zealand": "New Zealand",
-      "Ivory Coast": "Ivory Coast",
-      "Curaçao": "Curaçao",
-    };
-    return shortNames[name] || (name.length > 10 ? name.split(" ").pop()! : name);
-  };
-
-  const homeShort = shortenName(match.home);
-  const awayShort = shortenName(match.away);
+  const homeShort = shortenTeamName(match.home);
+  const awayShort = shortenTeamName(match.away);
   const countdown = formatCountdown(match.date, match.time_pt);
 
   return (
