@@ -164,7 +164,7 @@ async function upsertScore(matchId: number, homeScore: number, awayScore: number
 
   const existing = await rawQuery(
     "SELECT id, is_locked FROM match_results WHERE match_id = ?1 LIMIT 1",
-    [{ type: "integer", value: matchId }]
+    [{ type: "text", value: String(matchId) }]
   );
 
   if (existing.length > 0) {
@@ -172,30 +172,35 @@ async function upsertScore(matchId: number, homeScore: number, awayScore: number
     const lockedVal = existing[0][1]?.value;
     const alreadyLocked = lockedVal === 1 || lockedVal === true || lockedVal === "1";
 
+    // If already locked, don't overwrite — admin/locked score is authoritative
+    if (alreadyLocked) {
+      return { alreadyLocked: true, isNew: false };
+    }
+
     await rawQuery(
       "UPDATE match_results SET home_score = ?1, away_score = ?2, is_locked = ?3, updated_at = ?4 WHERE id = ?5",
       [
-        { type: "integer", value: homeScore },
-        { type: "integer", value: awayScore },
-        { type: "integer", value: locked ? 1 : 0 },
-        { type: "integer", value: now },
+        { type: "text", value: String(homeScore) },
+        { type: "text", value: String(awayScore) },
+        { type: "text", value: locked ? "1" : "0" },
+        { type: "text", value: String(now) },
         { type: "text", value: id },
       ]
     );
 
-    return { alreadyLocked, isNew: false };
+    return { alreadyLocked: false, isNew: false };
   } else {
     const id = crypto.randomUUID();
     await rawQuery(
       "INSERT INTO match_results (id, match_id, home_score, away_score, is_locked, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
       [
         { type: "text", value: id },
-        { type: "integer", value: matchId },
-        { type: "integer", value: homeScore },
-        { type: "integer", value: awayScore },
-        { type: "integer", value: locked ? 1 : 0 },
-        { type: "integer", value: now },
-        { type: "integer", value: now },
+        { type: "text", value: String(matchId) },
+        { type: "text", value: String(homeScore) },
+        { type: "text", value: String(awayScore) },
+        { type: "text", value: locked ? "1" : "0" },
+        { type: "text", value: String(now) },
+        { type: "text", value: String(now) },
       ]
     );
 
@@ -210,7 +215,7 @@ async function scoreMatch(matchId: number, homeScore: number, awayScore: number)
 
   const predRows = await rawQuery(
     "SELECT user_id, home_score, away_score FROM match_predictions WHERE match_id = ?1",
-    [{ type: "integer", value: matchId }]
+    [{ type: "text", value: String(matchId) }]
   );
 
   let scored = 0;
@@ -229,7 +234,7 @@ async function scoreMatch(matchId: number, homeScore: number, awayScore: number)
       "SELECT id FROM user_points WHERE user_id = ?1 AND match_id = ?2 LIMIT 1",
       [
         { type: "text", value: String(pred[0]?.value) },
-        { type: "integer", value: matchId },
+        { type: "text", value: String(matchId) },
       ]
     );
 
@@ -239,8 +244,8 @@ async function scoreMatch(matchId: number, homeScore: number, awayScore: number)
       await rawQuery(
         "UPDATE user_points SET points = ?1, created_at = ?2 WHERE id = ?3",
         [
-          { type: "integer", value: points },
-          { type: "integer", value: now },
+          { type: "text", value: String(points) },
+          { type: "text", value: String(now) },
           { type: "text", value: existingPoints[0][0]?.value },
         ]
       );
@@ -251,9 +256,9 @@ async function scoreMatch(matchId: number, homeScore: number, awayScore: number)
         [
           { type: "text", value: id },
           { type: "text", value: String(pred[0]?.value) },
-          { type: "integer", value: matchId },
-          { type: "integer", value: points },
-          { type: "integer", value: now },
+          { type: "text", value: String(matchId) },
+          { type: "text", value: String(points) },
+          { type: "text", value: String(now) },
         ]
       );
     }
