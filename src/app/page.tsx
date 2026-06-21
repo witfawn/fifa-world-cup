@@ -67,6 +67,12 @@ export default function HomePage() {
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [matchResults, setMatchResults] = useState<Record<number, { homeScore: number; awayScore: number; isLocked: boolean }>>({});
+  const [livePredictions, setLivePredictions] = useState<{
+    matchId: number;
+    home: string;
+    away: string;
+    predictions: { userName: string; homeScore: number | null; awayScore: number | null }[];
+  }[]>([]);
 
   const fetchAllData = useCallback(() => {
     if (status === "authenticated") {
@@ -80,8 +86,11 @@ export default function HomePage() {
         fetch(`/api/results?t=${Date.now()}`)
           .then((res) => res.json())
           .catch(() => []),
+        fetch(`/api/live-predictions?t=${Date.now()}`)
+          .then((res) => res.json())
+          .catch(() => []),
       ])
-        .then(([profileData, predsData, leaderboardData, paymentData, resultsData]) => {
+        .then(([profileData, predsData, leaderboardData, paymentData, resultsData, liveData]) => {
           setProfile(profileData);
           setPredictions(predsData);
           if (paymentData?.payment?.status) {
@@ -101,6 +110,7 @@ export default function HomePage() {
             rMap[r.matchId] = { homeScore: r.homeScore, awayScore: r.awayScore, isLocked: r.isLocked };
           }
           setMatchResults(rMap);
+          setLivePredictions(Array.isArray(liveData) ? liveData : []);
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -243,6 +253,80 @@ export default function HomePage() {
             >
               Pay Now →
             </button>
+          </div>
+        )}
+
+        {/* Card 0: Live Predictions (only when games in progress) */}
+        {livePredictions.length > 0 && (
+          <div
+            className="rounded-2xl p-5 mb-4"
+            style={{
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <span className="relative flex h-3 w-3">
+                <span
+                  className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                  style={{ backgroundColor: "#ef4444" }}
+                />
+                <span
+                  className="relative inline-flex rounded-full h-3 w-3"
+                  style={{ backgroundColor: "#ef4444" }}
+                />
+              </span>
+              <h2
+                className="text-xs font-bold uppercase tracking-wider"
+                style={{ color: "#ef4444" }}
+              >
+                🔴 Live Now
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              {livePredictions.map((game) => (
+                <div key={game.matchId}>
+                  {/* Match header */}
+                  <div className="flex items-center justify-center gap-3 mb-2">
+                    <span className="text-lg">{getTeamFlag(game.home)}</span>
+                    <span
+                      className="text-sm font-bold"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      {shortenTeamName(game.home)} vs {shortenTeamName(game.away)}
+                    </span>
+                    <span className="text-lg">{getTeamFlag(game.away)}</span>
+                  </div>
+
+                  {/* Predictions list */}
+                  <div className="space-y-1">
+                    {game.predictions.map((pred, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between px-3 py-1.5 rounded-lg"
+                        style={{ backgroundColor: "var(--navy-light)" }}
+                      >
+                        <span
+                          className="text-xs font-medium"
+                          style={{ color: "var(--foreground)" }}
+                        >
+                          {pred.userName}
+                        </span>
+                        <span
+                          className="text-xs font-bold"
+                          style={{ color: "var(--gold)" }}
+                        >
+                          {pred.homeScore !== null && pred.awayScore !== null
+                            ? `${pred.homeScore} — ${pred.awayScore}`
+                            : "No pick"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
