@@ -11,6 +11,7 @@ import {
   getUpcomingMatches,
   formatKickoff,
   formatCountdown,
+  parseKickoff,
 } from "@/lib/schedule";
 
 const TOTAL_MATCHES = 72;
@@ -156,7 +157,9 @@ export default function HomePage() {
   // Find today's games (in PT timezone)
   const todayPT = getTodayPT();
   const allMatches = getAllMatches();
-  const todaysGames = allMatches.filter((m) => m.date === todayPT);
+  const todaysGames = allMatches
+    .filter((m) => m.date === todayPT)
+    .sort((a, b) => parseKickoff(a.date, a.time_pt).getTime() - parseKickoff(b.date, b.time_pt).getTime());
 
   // Prediction stats
   const pickedCount = predictions.filter(
