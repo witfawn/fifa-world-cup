@@ -718,5 +718,95 @@
     "date": "2026-06-27",
     "time_pt": "7:00 PM",
     "venue": "AT&T Stadium"
+  },
+  {
+    "id": 73,
+    "group": "R32",
+    "matchday": 1,
+    "home": "South Africa",
+    "away": "Canada",
+    "date": "2026-06-28",
+    "time_pt": "12:00 PM",
+    "venue": "SoFi Stadium"
+  },
+  {
+    "id": 74,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Brazil",
+    "away": "Japan",
+    "date": "2026-06-29",
+    "time_pt": "10:00 AM",
+    "venue": "NRG Stadium"
+  },
+  {
+    "id": 75,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Germany",
+    "away": "Paraguay",
+    "date": "2026-06-29",
+    "time_pt": "1:30 PM",
+    "venue": "Gillette Stadium"
+  },
+  {
+    "id": 76,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Netherlands",
+    "away": "Morocco",
+    "date": "2026-06-29",
+    "time_pt": "6:00 PM",
+    "venue": "Estadio BBVA"
+  },
+  {
+    "id": 77,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Ivory Coast",
+    "away": "Norway",
+    "date": "2026-06-30",
+    "time_pt": "10:00 AM",
+    "venue": "AT&T Stadium"
+  },
+  {
+    "id": 78,
+    "group": "R32",
+    "matchday": 1,
+    "home": "France",
+    "away": "Sweden",
+    "date": "2026-06-30",
+    "time_pt": "2:00 PM",
+    "venue": "MetLife Stadium"
+  },
+  {
+    "id": 79,
+    "group": "R32",
+    "matchday": 1,
+    "home": "United States",
+    "away": "Bosnia-Herzegovina",
+    "date": "2026-07-01",
+    "time_pt": "5:00 PM",
+    "venue": "Levi's Stadium"
+  },
+  {
+    "id": 80,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Australia",
+    "away": "Egypt",
+    "date": "2026-07-03",
+    "time_pt": "11:00 AM",
+    "venue": "AT&T Stadium"
+  },
+  {
+    "id": 81,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Argentina",
+    "away": "Cape Verde",
+    "date": "2026-07-03",
+    "time_pt": "3:00 PM",
+    "venue": "Hard Rock Stadium"
   }
 ]
