@@ -19,6 +19,7 @@ async function ensureTable() {
         match_id INTEGER NOT NULL,
         home_score INTEGER,
         away_score INTEGER,
+        pk_winner TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -26,6 +27,12 @@ async function ensureTable() {
     `);
   } catch {
     // table might already exist
+  }
+  // Add pk_winner column if missing (migrations for existing DBs)
+  try {
+    await client.execute(`ALTER TABLE match_predictions ADD COLUMN pk_winner TEXT`);
+  } catch {
+    // column already exists
   }
   try {
     await client.execute(
@@ -72,7 +79,7 @@ export async function POST(req: NextRequest) {
   await ensureTable();
 
   const body = await req.json();
-  const { matchId, homeScore, awayScore } = body;
+  const { matchId, homeScore, awayScore, pkWinner } = body;
 
   if (typeof matchId !== "number") {
     return NextResponse.json({ error: "Invalid matchId" }, { status: 400 });
@@ -90,6 +97,10 @@ export async function POST(req: NextRequest) {
   if (aScore !== null && (typeof aScore !== "number" || aScore < 0 || !Number.isInteger(aScore))) {
     return NextResponse.json({ error: "Invalid awayScore" }, { status: 400 });
   }
+
+  // Validate pkWinner: 'home' | 'away' | null
+  const validPkWinner =
+    pkWinner === "home" || pkWinner === "away" ? pkWinner : null;
 
   // Lock check: reject predictions for matches that are within 5 min of kickoff
   const match = getAllMatches().find((m) => m.id === matchId);
@@ -119,6 +130,7 @@ export async function POST(req: NextRequest) {
       .set({
         homeScore: hScore,
         awayScore: aScore,
+        pkWinner: validPkWinner,
         updatedAt: new Date(now * 1000),
       })
       .where(eq(matchPredictions.id, existing[0].id));
@@ -127,6 +139,7 @@ export async function POST(req: NextRequest) {
       ...existing[0],
       homeScore: hScore,
       awayScore: aScore,
+      pkWinner: validPkWinner,
       updatedAt: new Date(now * 1000),
     });
   } else {
@@ -138,6 +151,7 @@ export async function POST(req: NextRequest) {
       matchId,
       homeScore: hScore,
       awayScore: aScore,
+      pkWinner: validPkWinner,
       createdAt: new Date(now * 1000),
       updatedAt: new Date(now * 1000),
     });
@@ -148,6 +162,7 @@ export async function POST(req: NextRequest) {
       matchId,
       homeScore: hScore,
       awayScore: aScore,
+      pkWinner: validPkWinner,
       createdAt: new Date(now * 1000),
       updatedAt: new Date(now * 1000),
     });

@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Header from '@/components/Header';
 import { ADMIN_EMAILS } from '@/lib/config';
 import { getAllMatches } from '@/lib/schedule';
+import { getMatchType } from '@/lib/scoring';
 import { getTeamFlag } from '@/lib/teams';
 
 interface PaymentRecord {
@@ -31,6 +32,7 @@ interface MatchResult {
   matchId: number;
   homeScore: number;
   awayScore: number;
+  pkWinner: string | null;
   isLocked: boolean;
 }
 
@@ -52,6 +54,7 @@ export default function AdminPage() {
   const allMatches = getAllMatches();
   const [results, setResults] = useState<MatchResult[]>([]);
   const [scores, setScores] = useState<Record<number, { home: string; away: string }>>({});
+  const [pkWinners, setPkWinners] = useState<Record<number, 'home' | 'away' | null>>({});
   const [savingMatch, setSavingMatch] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -137,10 +140,11 @@ export default function AdminPage() {
       const s = scores[matchId] || { home: '0', away: '0' };
       const home = parseInt(s.home) || 0;
       const away = parseInt(s.away) || 0;
+      const pkWinner = pkWinners[matchId] || null;
       const res = await fetch('/api/admin/results', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId, homeScore: home, awayScore: away, isLocked: lock }),
+        body: JSON.stringify({ matchId, homeScore: home, awayScore: away, pkWinner, isLocked: lock }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Save failed' }));
@@ -151,10 +155,10 @@ export default function AdminPage() {
         const existing = prev.find((r) => r.matchId === matchId);
         if (existing) {
           return prev.map((r) =>
-            r.matchId === matchId ? { ...r, homeScore: home, awayScore: away, isLocked: lock } : r
+            r.matchId === matchId ? { ...r, homeScore: home, awayScore: away, pkWinner, isLocked: lock } : r
           );
         }
-        return [...prev, { id: crypto.randomUUID(), matchId, homeScore: home, awayScore: away, isLocked: lock, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }];
+        return [...prev, { id: crypto.randomUUID(), matchId, homeScore: home, awayScore: away, pkWinner, isLocked: lock, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }];
       });
       setScores((prev) => ({ ...prev, [matchId]: { home: String(home), away: String(away) } }));
     } catch {
@@ -373,6 +377,38 @@ export default function AdminPage() {
                         <span className="text-lg">{getTeamFlag(match.away)}</span>
                       </div>
                     </div>
+
+                    {/* PK Winner selector — knockout only, when score is a draw */}
+                    {getMatchType(match.group) === 'knockout' &&
+                      s.home && s.away && s.home === s.away && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[10px] font-medium" style={{ color: 'var(--muted)' }}>
+                          Winner after PKs:
+                        </span>
+                        <button
+                          onClick={() => setPkWinners((prev) => ({ ...prev, [match.id]: prev[match.id] === 'home' ? null : 'home' }))}
+                          className="text-[11px] font-bold px-3 py-1 rounded-lg transition-all"
+                          style={{
+                            backgroundColor: pkWinners[match.id] === 'home' ? 'var(--gold)' : 'var(--navy-light)',
+                            color: pkWinners[match.id] === 'home' ? 'var(--background)' : 'var(--muted)',
+                            border: pkWinners[match.id] === 'home' ? '2px solid var(--gold)' : '2px solid var(--border)',
+                          }}
+                        >
+                          {getTeamFlag(match.home)} {match.home.length > 10 ? match.home.split(' ').pop() : match.home}
+                        </button>
+                        <button
+                          onClick={() => setPkWinners((prev) => ({ ...prev, [match.id]: prev[match.id] === 'away' ? null : 'away' }))}
+                          className="text-[11px] font-bold px-3 py-1 rounded-lg transition-all"
+                          style={{
+                            backgroundColor: pkWinners[match.id] === 'away' ? 'var(--gold)' : 'var(--navy-light)',
+                            color: pkWinners[match.id] === 'away' ? 'var(--background)' : 'var(--muted)',
+                            border: pkWinners[match.id] === 'away' ? '2px solid var(--gold)' : '2px solid var(--border)',
+                          }}
+                        >
+                          {getTeamFlag(match.away)} {match.away.length > 10 ? match.away.split(' ').pop() : match.away}
+                        </button>
+                      </div>
+                    )}
 
                     {/* Action buttons */}
                     <div className="flex gap-2 mt-3">

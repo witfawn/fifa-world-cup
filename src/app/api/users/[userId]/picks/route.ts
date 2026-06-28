@@ -78,13 +78,13 @@ export async function GET(
 
   // Get user's predictions
   const predRows = await rawQuery(
-    "SELECT match_id, home_score, away_score FROM match_predictions WHERE user_id = ?1",
+    "SELECT match_id, home_score, away_score, pk_winner FROM match_predictions WHERE user_id = ?1",
     [{ type: "text", value: userId }]
   );
 
   // Get match results (locked games)
   const resultRows = await rawQuery(
-    "SELECT match_id, home_score, away_score, is_locked FROM match_results WHERE is_locked = 1"
+    "SELECT match_id, home_score, away_score, pk_winner, is_locked FROM match_results WHERE is_locked = 1"
   );
 
   // Get user's points
@@ -94,19 +94,21 @@ export async function GET(
   );
 
   // Build lookup maps
-  const predictionsMap = new Map<number, { home: number; away: number }>();
+  const predictionsMap = new Map<number, { home: number; away: number; pkWinner: string | null }>();
   for (const row of predRows) {
     predictionsMap.set(Number(row[0]?.value), {
       home: Number(row[1]?.value),
       away: Number(row[2]?.value),
+      pkWinner: row[3]?.value || null,
     });
   }
 
-  const resultsMap = new Map<number, { home: number; away: number }>();
+  const resultsMap = new Map<number, { home: number; away: number; pkWinner: string | null }>();
   for (const row of resultRows) {
     resultsMap.set(Number(row[0]?.value), {
       home: Number(row[1]?.value),
       away: Number(row[2]?.value),
+      pkWinner: row[3]?.value || null,
     });
   }
 
@@ -133,8 +135,10 @@ export async function GET(
         away: m.away,
         predictedHome: pred.home,
         predictedAway: pred.away,
+        predictedPkWinner: pred.pkWinner,
         actualHome: result?.home ?? null,
         actualAway: result?.away ?? null,
+        actualPkWinner: result?.pkWinner ?? null,
         isLocked: result !== null,
         points,
       };

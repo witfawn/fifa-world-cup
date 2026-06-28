@@ -36,7 +36,7 @@ async function rawQuery(sql: string, args: { type: string; value: string | numbe
           "Content-Type": "application/json",
           "Content-Length": Buffer.byteLength(body),
           "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
+          Pragma: "no-cache",
         },
       },
       (res) => {
@@ -64,8 +64,7 @@ function isAdmin(email: string | null | undefined): boolean {
   return ADMIN_EMAILS.includes(email);
 }
 
-/**
- * POST /api/admin/results
+/** POST /api/admin/results
  * Uses Node.js https module to bypass Vercel's fetch caching
  */
 export async function POST(req: NextRequest) {
@@ -75,7 +74,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { matchId, homeScore, awayScore, isLocked } = body;
+  const { matchId, homeScore, awayScore, pkWinner, isLocked } = body;
 
   if (typeof matchId !== "number") {
     return NextResponse.json({ error: "Invalid matchId" }, { status: 400 });
@@ -84,12 +83,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid scores" }, { status: 400 });
   }
 
+  // Validate pkWinner: 'home' | 'away' | null
+  const validPkWinner =
+    pkWinner === "home" || pkWinner === "away" ? pkWinner : null;
+
   const now = Math.floor(Date.now() / 1000);
+
+  // Ensure pk_winner column exists on match_results
+  try {
+    await rawQuery("ALTER TABLE match_results ADD COLUMN pk_winner TEXT");
+  } catch {
+    // column already exists
+  }
 
   // Check existing
   const existingRows = await rawQuery(
     "SELECT id, is_locked FROM match_results WHERE match_id = ?1 LIMIT 1",
-    [{ type: "integer", value: matchId }]
+    [{ type: "text", value: String(matchId) }]
   );
 
   let locked = false;
@@ -100,12 +110,13 @@ export async function POST(req: NextRequest) {
     locked = isLocked ?? (existingLocked === 1);
 
     await rawQuery(
-      "UPDATE match_results SET home_score = ?1, away_score = ?2, is_locked = ?3, updated_at = ?4 WHERE id = ?5",
+      "UPDATE match_results SET home_score = ?1, away_score = ?2, pk_winner = ?3, is_locked = ?4, updated_at = ?5 WHERE id = ?6",
       [
-        { type: "integer", value: homeScore },
-        { type: "integer", value: awayScore },
-        { type: "integer", value: locked ? 1 : 0 },
-        { type: "integer", value: now },
+        { type: "text", value: String(homeScore) },
+        { type: "text", value: String(awayScore) },
+        { type: "text", value: validPkWinner },
+        { type: "text", value: locked ? "1" : "0" },
+        { type: "text", value: String(now) },
         { type: "text", value: existingId },
       ]
     );
@@ -113,15 +124,16 @@ export async function POST(req: NextRequest) {
     const id = crypto.randomUUID();
     locked = isLocked ?? false;
     await rawQuery(
-      "INSERT INTO match_results (id, match_id, home_score, away_score, is_locked, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+      "INSERT INTO match_results (id, match_id, home_score, away_score, pk_winner, is_locked, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
       [
         { type: "text", value: id },
-        { type: "integer", value: matchId },
-        { type: "integer", value: homeScore },
-        { type: "integer", value: awayScore },
-        { type: "integer", value: locked ? 1 : 0 },
-        { type: "integer", value: now },
-        { type: "integer", value: now },
+        { type: "text", value: String(matchId) },
+        { type: "text", value: String(homeScore) },
+        { type: "text", value: String(awayScore) },
+        { type: "text", value: validPkWinner },
+        { type: "text", value: locked ? "1" : "0" },
+        { type: "text", value: String(now) },
+        { type: "text", value: String(now) },
       ]
     );
   }
@@ -132,18 +144,27 @@ export async function POST(req: NextRequest) {
     const matchType = scheduleMatch ? getMatchType(scheduleMatch.group) : "group";
 
     const predRows = await rawQuery(
-      "SELECT user_id, home_score, away_score FROM match_predictions WHERE match_id = ?1",
-      [{ type: "integer", value: matchId }]
+      "SELECT user_id, home_score, away_score, pk_winner FROM match_predictions WHERE match_id = ?1",
+      [{ type: "text", value: String(matchId) }]
     );
 
     for (const pred of predRows) {
       const predHome = pred[1]?.value;
       const predAway = pred[2]?.value;
+      const predPk = pred[3]?.value || null;
       if (predHome === null || predHome === undefined || predAway === null || predAway === undefined) continue;
 
       const points = calculatePoints(
-        { homeScore: Number(predHome), awayScore: Number(predAway) },
-        { homeScore, awayScore },
+        {
+          homeScore: Number(predHome),
+          awayScore: Number(predAway),
+          pkWinner: predPk as "home" | "away" | null,
+        },
+        {
+          homeScore,
+          awayScore,
+          pkWinner: validPkWinner,
+        },
         matchType
       );
 
@@ -151,7 +172,7 @@ export async function POST(req: NextRequest) {
         "SELECT id FROM user_points WHERE user_id = ?1 AND match_id = ?2 LIMIT 1",
         [
           { type: "text", value: String(pred[0]?.value) },
-          { type: "integer", value: matchId },
+          { type: "text", value: String(matchId) },
         ]
       );
 
@@ -159,8 +180,8 @@ export async function POST(req: NextRequest) {
         await rawQuery(
           "UPDATE user_points SET points = ?1, created_at = ?2 WHERE id = ?3",
           [
-            { type: "integer", value: points },
-            { type: "integer", value: now },
+            { type: "text", value: String(points) },
+            { type: "text", value: String(now) },
             { type: "text", value: existingPoints[0][0]?.value },
           ]
         );
@@ -171,9 +192,9 @@ export async function POST(req: NextRequest) {
           [
             { type: "text", value: id },
             { type: "text", value: String(pred[0]?.value) },
-            { type: "integer", value: matchId },
-            { type: "integer", value: points },
-            { type: "integer", value: now },
+            { type: "text", value: String(matchId) },
+            { type: "text", value: String(points) },
+            { type: "text", value: String(now) },
           ]
         );
       }
@@ -185,6 +206,7 @@ export async function POST(req: NextRequest) {
     matchId,
     homeScore,
     awayScore,
+    pkWinner: validPkWinner,
     isLocked: locked,
     scored: locked ? "scoring engine ran" : "not locked yet",
   });

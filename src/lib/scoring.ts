@@ -8,22 +8,37 @@
  *   Participation (picked)    → 1 point
  *   No prediction             → 0 points
  *
- * Knockout Stage (cumulative bonuses — "+" prefix):
- *   Correct winner            → +10 points (base bonus)
- *   Exact score               → +6 points (additional)
- *   Correct winner + diff     → +4 points (additional)
- *   → Exact match:            10 + 6 + 4 = 20 pts
- *   → Winner + diff (not exact): 10 + 4 = 14 pts
- *   → Winner only:            10 pts
- *   Participation (picked)    → 1 point
+ * Knockout Stage (cumulative bonuses — all stack on top of 1 pt participation):
+ *   Participation (picked)    → 1 point (always, if you made a pick)
+ *   Correct winner            → +10 points
+ *   Correct goal difference   → +4 points
+ *   Exact score               → +6 points
+ *   → Exact match:            1 + 10 + 6 + 4 = 21 pts
+ *   → Winner + diff (not exact): 1 + 10 + 4 = 15 pts
+ *   → Winner only:            1 + 10 = 11 pts
+ *   Wrong winner:             1 pt (participation only)
  *   No prediction             → 0 points
+ *
+ * Knockout PK edge case:
+ *   When the actual score is a draw (e.g. 1-1), the +10 "correct winner"
+ *   bonus is based on the predicted PK winner vs actual PK winner.
+ *   The score comparison (exact score, goal diff) is still based on the
+ *   score at the end of extra time (not PK goals).
  */
 
 export type MatchType = "group" | "knockout";
+export type PkWinner = "home" | "away" | null;
 
 export interface PredictionScore {
   homeScore: number;
   awayScore: number;
+  pkWinner?: PkWinner;
+}
+
+export interface ActualScore {
+  homeScore: number;
+  awayScore: number;
+  pkWinner?: PkWinner;
 }
 
 /** Determine match result: 'home' | 'away' | 'draw' */
@@ -34,14 +49,27 @@ function getResult(home: number, away: number): "home" | "away" | "draw" {
 }
 
 /**
+ * Get the effective winner for a match result.
+ * If the score is a draw and pkWinner is set, the PK winner is the effective winner.
+ * Otherwise, use the score result.
+ */
+function getEffectiveWinner(home: number, away: number, pkWinner?: PkWinner): "home" | "away" | "draw" {
+  const scoreResult = getResult(home, away);
+  if (scoreResult === "draw" && pkWinner) {
+    return pkWinner;
+  }
+  return scoreResult;
+}
+
+/**
  * Calculate points for a single prediction against the actual result.
  * @param pred - User's predicted score
- * @param actual - Actual match result
+ * @param actual - Actual match result (with optional pkWinner)
  * @param matchType - 'group' (default) or 'knockout'
  */
 export function calculatePoints(
   pred: PredictionScore,
-  actual: PredictionScore,
+  actual: ActualScore,
   matchType: MatchType = "group"
 ): number {
   if (matchType === "knockout") {
@@ -53,7 +81,7 @@ export function calculatePoints(
 /** Group Stage: exclusive tiers — highest applicable wins */
 function calculateGroupPoints(
   pred: PredictionScore,
-  actual: PredictionScore
+  actual: ActualScore
 ): number {
   const predDiff = pred.homeScore - pred.awayScore;
   const actualDiff = actual.homeScore - actual.awayScore;
@@ -83,12 +111,13 @@ function calculateGroupPoints(
 /** Knockout Stage: cumulative bonuses */
 function calculateKnockoutPoints(
   pred: PredictionScore,
-  actual: PredictionScore
+  actual: ActualScore
 ): number {
-  let points = 0;
+  // Participation: always 1 pt if you picked a score
+  let points = 1;
 
-  const predWinner = getResult(pred.homeScore, pred.awayScore);
-  const actualWinner = getResult(actual.homeScore, actual.awayScore);
+  const predWinner = getEffectiveWinner(pred.homeScore, pred.awayScore, pred.pkWinner);
+  const actualWinner = getEffectiveWinner(actual.homeScore, actual.awayScore, actual.pkWinner);
   const predDiff = Math.abs(pred.homeScore - pred.awayScore);
   const actualDiff = Math.abs(actual.homeScore - actual.awayScore);
 
@@ -105,9 +134,6 @@ function calculateKnockoutPoints(
     if (pred.homeScore === actual.homeScore && pred.awayScore === actual.awayScore) {
       points += 6;
     }
-  } else {
-    // Wrong result but picked a score → 1 pt (participation)
-    points = 1;
   }
 
   return points;

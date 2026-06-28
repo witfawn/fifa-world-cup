@@ -159,8 +159,15 @@ function mapToInternalMatch(apiMatch: any): number | null {
 }
 
 /** Ensure match_results row exists, return whether it was already locked */
-async function upsertScore(matchId: number, homeScore: number, awayScore: number, locked: boolean): Promise<{ alreadyLocked: boolean; isNew: boolean }> {
+async function upsertScore(matchId: number, homeScore: number, awayScore: number, locked: boolean, pkWinner: "home" | "away" | null = null): Promise<{ alreadyLocked: boolean; isNew: boolean }> {
   const now = Math.floor(Date.now() / 1000);
+
+  // Ensure pk_winner column exists
+  try {
+    await rawQuery("ALTER TABLE match_results ADD COLUMN pk_winner TEXT");
+  } catch {
+    // column already exists
+  }
 
   const existing = await rawQuery(
     "SELECT id, is_locked FROM match_results WHERE match_id = ?1 LIMIT 1",
@@ -178,10 +185,11 @@ async function upsertScore(matchId: number, homeScore: number, awayScore: number
     }
 
     await rawQuery(
-      "UPDATE match_results SET home_score = ?1, away_score = ?2, is_locked = ?3, updated_at = ?4 WHERE id = ?5",
+      "UPDATE match_results SET home_score = ?1, away_score = ?2, pk_winner = ?3, is_locked = ?4, updated_at = ?5 WHERE id = ?6",
       [
         { type: "text", value: String(homeScore) },
         { type: "text", value: String(awayScore) },
+        { type: "text", value: pkWinner },
         { type: "text", value: locked ? "1" : "0" },
         { type: "text", value: String(now) },
         { type: "text", value: id },
@@ -192,12 +200,13 @@ async function upsertScore(matchId: number, homeScore: number, awayScore: number
   } else {
     const id = crypto.randomUUID();
     await rawQuery(
-      "INSERT INTO match_results (id, match_id, home_score, away_score, is_locked, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+      "INSERT INTO match_results (id, match_id, home_score, away_score, pk_winner, is_locked, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
       [
         { type: "text", value: id },
         { type: "text", value: String(matchId) },
         { type: "text", value: String(homeScore) },
         { type: "text", value: String(awayScore) },
+        { type: "text", value: pkWinner },
         { type: "text", value: locked ? "1" : "0" },
         { type: "text", value: String(now) },
         { type: "text", value: String(now) },
@@ -209,12 +218,12 @@ async function upsertScore(matchId: number, homeScore: number, awayScore: number
 }
 
 /** Run scoring engine for a locked match */
-async function scoreMatch(matchId: number, homeScore: number, awayScore: number) {
+async function scoreMatch(matchId: number, homeScore: number, awayScore: number, pkWinner: "home" | "away" | null = null) {
   const schedule = getAllMatches().find((m) => m.id === matchId);
   const matchType = schedule ? getMatchType(schedule.group) : "group";
 
   const predRows = await rawQuery(
-    "SELECT user_id, home_score, away_score FROM match_predictions WHERE match_id = ?1",
+    "SELECT user_id, home_score, away_score, pk_winner FROM match_predictions WHERE match_id = ?1",
     [{ type: "text", value: String(matchId) }]
   );
 
@@ -222,11 +231,20 @@ async function scoreMatch(matchId: number, homeScore: number, awayScore: number)
   for (const pred of predRows) {
     const predHome = pred[1]?.value;
     const predAway = pred[2]?.value;
+    const predPk = pred[3]?.value || null;
     if (predHome === null || predHome === undefined || predAway === null || predAway === undefined) continue;
 
     const points = calculatePoints(
-      { homeScore: Number(predHome), awayScore: Number(predAway) },
-      { homeScore, awayScore },
+      {
+        homeScore: Number(predHome),
+        awayScore: Number(predAway),
+        pkWinner: predPk as "home" | "away" | null,
+      },
+      {
+        homeScore,
+        awayScore,
+        pkWinner,
+      },
       matchType
     );
 
@@ -300,16 +318,25 @@ export async function GET(_req: NextRequest) {
       const awayScore = apiMatch.score?.fullTime?.away;
       if (homeScore === null || awayScore === null) continue;
 
-      const { alreadyLocked, isNew } = await upsertScore(internalId, homeScore, awayScore, true);
+      // Extract PK winner if match went to penalties
+      let pkWinner: "home" | "away" | null = null;
+      const penalties = apiMatch.score?.penalties;
+      if (penalties?.home != null && penalties?.away != null) {
+        if (penalties.home > penalties.away) pkWinner = "home";
+        else if (penalties.away > penalties.home) pkWinner = "away";
+      }
+
+      const { alreadyLocked, isNew } = await upsertScore(internalId, homeScore, awayScore, true, pkWinner);
 
       let scored = 0;
       if (!alreadyLocked) {
-        scored = await scoreMatch(internalId, homeScore, awayScore);
+        scored = await scoreMatch(internalId, homeScore, awayScore, pkWinner);
       }
 
       results.push({
         match: `${apiMatch.homeTeam.name} vs ${apiMatch.awayTeam.name}`,
         score: `${homeScore}-${awayScore}`,
+        pkWinner,
         internalId,
         isNew,
         alreadyLocked,

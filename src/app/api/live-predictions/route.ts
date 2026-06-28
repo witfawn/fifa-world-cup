@@ -42,7 +42,7 @@ export async function GET() {
         {
           type: "execute",
           stmt: {
-            sql: `SELECT mp.match_id, mp.home_score, mp.away_score, u.name
+            sql: `SELECT mp.match_id, mp.home_score, mp.away_score, mp.pk_winner, u.name
                   FROM match_predictions mp
                   JOIN users u ON mp.user_id = u.id
                   WHERE mp.match_id IN (${liveMatchIds.map(() => "?").join(",")})
@@ -112,19 +112,20 @@ export async function GET() {
     result.results?.[0]?.response?.result?.rows || [];
   const predictionsByMatch: Record<
     number,
-    { userName: string; homeScore: number | null; awayScore: number | null }[]
+    { userName: string; homeScore: number | null; awayScore: number | null; pkWinner: string | null }[]
   > = {};
 
   for (const row of predRows) {
     const matchId = Number(row[0]?.value);
     const homeScore = row[1]?.value != null ? Number(row[1]?.value) : null;
     const awayScore = row[2]?.value != null ? Number(row[2]?.value) : null;
-    const userName = row[3]?.value || "Unknown";
+    const pkWinner = row[3]?.value || null;
+    const userName = row[4]?.value || "Unknown";
 
     if (!predictionsByMatch[matchId]) {
       predictionsByMatch[matchId] = [];
     }
-    predictionsByMatch[matchId].push({ userName, homeScore, awayScore });
+    predictionsByMatch[matchId].push({ userName, homeScore, awayScore, pkWinner });
   }
 
   // Build response: only live (not locked) matches with predictions

@@ -59,7 +59,7 @@ export default function PredictPage() {
   }
 
   const handleSave = useCallback(
-    async (matchId: number, homeScore: number | null, awayScore: number | null) => {
+    async (matchId: number, homeScore: number | null, awayScore: number | null, pkWinner?: "home" | "away" | null) => {
       const userId = userIdRef.current;
       if (!userId) return;
       // Optimistic update
@@ -69,10 +69,10 @@ export default function PredictPage() {
         matchId,
         homeScore,
         awayScore,
+        pkWinner: pkWinner ?? null,
         createdAt: predictionsRef.current[matchId]?.createdAt || new Date(),
         updatedAt: new Date(),
       };
-
       setPredictions((prev) => ({
         ...prev,
         [matchId]: optimisticPrediction,
@@ -82,7 +82,7 @@ export default function PredictPage() {
         const res = await fetch("/api/predictions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ matchId, homeScore, awayScore }),
+          body: JSON.stringify({ matchId, homeScore, awayScore, pkWinner }),
         });
 
         if (res.ok) {

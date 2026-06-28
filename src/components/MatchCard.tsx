@@ -3,6 +3,7 @@
 import { useCallback, useRef } from "react";
 import { getTeamFlag, shortenTeamName } from "@/lib/teams";
 import { isMatchLocked, formatKickoff, formatCountdown } from "@/lib/schedule";
+import { getMatchType } from "@/lib/scoring";
 import ScoreInput from "./ScoreInput";
 import type { Match } from "@/lib/schedule";
 import type { MatchPrediction as Prediction } from "@/lib/db/schema";
@@ -10,7 +11,7 @@ import type { MatchPrediction as Prediction } from "@/lib/db/schema";
 interface MatchCardProps {
   match: Match;
   prediction: Prediction | null;
-  onSave: (matchId: number, homeScore: number | null, awayScore: number | null) => void;
+  onSave: (matchId: number, homeScore: number | null, awayScore: number | null, pkWinner?: "home" | "away" | null) => void;
 }
 
 export default function MatchCard({ match, prediction, onSave }: MatchCardProps) {
@@ -21,6 +22,8 @@ export default function MatchCard({ match, prediction, onSave }: MatchCardProps)
     prediction?.awayScore !== null &&
     prediction?.awayScore !== undefined;
 
+  const isKnockout = getMatchType(match.group) === "knockout";
+
   // Debounce auto-save
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localHomeRef = useRef<number | null>(
@@ -29,29 +32,55 @@ export default function MatchCard({ match, prediction, onSave }: MatchCardProps)
   const localAwayRef = useRef<number | null>(
     prediction?.awayScore ?? null
   );
+  const localPkWinnerRef = useRef<"home" | "away" | null>(
+    (prediction as Prediction & { pkWinner?: string })?.pkWinner as "home" | "away" | null ?? null
+  );
 
   // Sync from prop changes
   const homeScore = localHomeRef.current;
   const awayScore = localAwayRef.current;
+  const pkWinner = localPkWinnerRef.current;
+
+  // Check if the predicted score is a draw
+  const isDraw =
+    homeScore !== null &&
+    awayScore !== null &&
+    homeScore === awayScore;
 
   const debouncedSave = useCallback(
-    (hScore: number | null, aScore: number | null) => {
+    (hScore: number | null, aScore: number | null, pk: "home" | "away" | null = localPkWinnerRef.current) => {
       localHomeRef.current = hScore;
       localAwayRef.current = aScore;
+      localPkWinnerRef.current = pk;
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        onSave(match.id, hScore, aScore);
+        onSave(match.id, hScore, aScore, pk);
       }, 500);
     },
     [match.id, onSave]
   );
 
   const handleHomeChange = (val: number | null) => {
-    debouncedSave(val, localAwayRef.current);
+    const newHome = val;
+    const newAway = localAwayRef.current;
+    // If score is no longer a draw, clear pkWinner
+    const stillDraw = newHome !== null && newAway !== null && newHome === newAway;
+    const newPk = stillDraw ? localPkWinnerRef.current : null;
+    debouncedSave(newHome, newAway, newPk);
   };
 
   const handleAwayChange = (val: number | null) => {
-    debouncedSave(localHomeRef.current, val);
+    const newHome = localHomeRef.current;
+    const newAway = val;
+    const stillDraw = newHome !== null && newAway !== null && newHome === newAway;
+    const newPk = stillDraw ? localPkWinnerRef.current : null;
+    debouncedSave(newHome, newAway, newPk);
+  };
+
+  const handlePkWinnerChange = (winner: "home" | "away") => {
+    // Toggle: if already selected, deselect
+    const newPk = localPkWinnerRef.current === winner ? null : winner;
+    debouncedSave(localHomeRef.current, localAwayRef.current, newPk);
   };
 
   const homeFlag = getTeamFlag(match.home);
@@ -82,7 +111,7 @@ export default function MatchCard({ match, prediction, onSave }: MatchCardProps)
               color: "var(--gold)",
             }}
           >
-            Group {match.group}
+            {isKnockout ? match.group : `Group ${match.group}`}
           </span>
           <span className="text-[10px]" style={{ color: "var(--muted)" }}>
             MD{match.matchday}
@@ -160,6 +189,49 @@ export default function MatchCard({ match, prediction, onSave }: MatchCardProps)
           </div>
         </div>
       </div>
+
+      {/* PK Winner selector — knockout only, when score is a draw */}
+      {isKnockout && isDraw && !locked && (
+        <div className="mt-2 flex items-center justify-center gap-2">
+          <span className="text-[10px] font-medium" style={{ color: "var(--muted)" }}>
+            Winner after PKs:
+          </span>
+          <button
+            onClick={() => handlePkWinnerChange("home")}
+            className="text-[11px] font-bold px-3 py-1 rounded-lg transition-all"
+            style={{
+              backgroundColor: pkWinner === "home" ? "var(--gold)" : "var(--navy-light)",
+              color: pkWinner === "home" ? "var(--background)" : "var(--muted)",
+              border: pkWinner === "home" ? "2px solid var(--gold)" : "2px solid var(--border)",
+            }}
+          >
+            {homeFlag} {homeShort}
+          </button>
+          <button
+            onClick={() => handlePkWinnerChange("away")}
+            className="text-[11px] font-bold px-3 py-1 rounded-lg transition-all"
+            style={{
+              backgroundColor: pkWinner === "away" ? "var(--gold)" : "var(--navy-light)",
+              color: pkWinner === "away" ? "var(--background)" : "var(--muted)",
+              border: pkWinner === "away" ? "2px solid var(--gold)" : "2px solid var(--border)",
+            }}
+          >
+            {awayFlag} {awayShort}
+          </button>
+        </div>
+      )}
+
+      {/* PK Winner display — locked knockout draw */}
+      {isKnockout && isDraw && locked && pkWinner && (
+        <div className="mt-2 flex items-center justify-center gap-1">
+          <span className="text-[10px]" style={{ color: "var(--muted)" }}>
+            PKs:
+          </span>
+          <span className="text-[11px] font-bold" style={{ color: "var(--gold)" }}>
+            {pkWinner === "home" ? `${homeFlag} ${homeShort}` : `${awayFlag} ${awayShort}`}
+          </span>
+        </div>
+      )}
 
       {/* Kickoff time + venue */}
       <div className="mt-2 text-center">

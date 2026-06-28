@@ -87,6 +87,7 @@ export const matchPredictions = sqliteTable(
     matchId: integer("match_id").notNull(),
     homeScore: integer("home_score"),
     awayScore: integer("away_score"),
+    pkWinner: text("pk_winner"), // 'home' | 'away' | null — knockout only
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),
@@ -139,6 +140,7 @@ export const matchResults = sqliteTable("match_results", {
   matchId: integer("match_id").notNull().unique(),
   homeScore: integer("home_score").notNull(),
   awayScore: integer("away_score").notNull(),
+  pkWinner: text("pk_winner"), // 'home' | 'away' | null — knockout only
   isLocked: integer("is_locked", { mode: "boolean" })
     .notNull()
     .$defaultFn(() => false),

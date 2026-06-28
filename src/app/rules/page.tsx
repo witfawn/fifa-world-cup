@@ -70,7 +70,54 @@ export default function RulesPage() {
           <ScoringRow points="+4 pts" label="Correct winner + goal diff" example="You said France 2-0, actual was France 3-1 (winner + diff correct)" />
           <ScoringRow points="1 pt" label="Participation" example="You picked a score — even if wrong, you get 1 point" />
           <ScoringRow points="0 pts" label="No prediction" example="You did not pick this game" />
-          <Note text="Score = result after 90 min (or 120 min if extra time). Penalty shootout decides the winner but does not count as goals." />
+          <Note text="Score = result after 90 min (or 120 min if extra time). If you predict a tie, pick which team wins after penalty kicks. The +10 winner bonus uses your PK pick when the game ends in a draw." />
+        </Section>
+
+        {/* Knockout Examples */}
+        <Section title="📝 Knockout Scoring Examples">
+          <p className="text-sm mb-3" style={{ color: "var(--muted)" }}>
+            All bonuses stack on top of 1 pt participation. Max per game: 21 pts.
+          </p>
+
+          {/* Example 1 */}
+          <div className="mb-4">
+            <p className="text-xs font-bold mb-2" style={{ color: "var(--foreground)" }}>
+              ⚽ You predicted: Argentina 2-1
+            </p>
+            <div className="space-y-1.5">
+              <ExampleRow actual="Argentina 2-1" pts="21" why="10 winner + 6 exact + 4 diff (+1 both)" />
+              <ExampleRow actual="Argentina 1-0" pts="16" why="10 winner + 4 diff (+1 both)" />
+              <ExampleRow actual="Argentina 3-1" pts="11" why="10 winner — diff is +2, not +1" />
+              <ExampleRow actual="France 2-1" pts="1" why="Wrong winner" />
+              <ExampleRow actual="2-2, Argentina PKs" pts="11" why="10 winner (PK pick right) — wrong score" />
+            </div>
+          </div>
+
+          {/* Example 2 */}
+          <div className="mb-4">
+            <p className="text-xs font-bold mb-2" style={{ color: "var(--foreground)" }}>
+              ⚽ You predicted: 1-1, Brazil wins PKs
+            </p>
+            <div className="space-y-1.5">
+              <ExampleRow actual="1-1, Brazil PKs" pts="21" why="10 winner + 6 exact + 4 diff (0 both)" />
+              <ExampleRow actual="1-1, Germany PKs" pts="11" why="6 exact + 4 diff — wrong PK winner" />
+              <ExampleRow actual="2-2, Brazil PKs" pts="15" why="10 winner + 4 diff (0 both)" />
+              <ExampleRow actual="Brazil 2-1" pts="1" why="You predicted a draw" />
+            </div>
+          </div>
+
+          {/* Example 3 */}
+          <div>
+            <p className="text-xs font-bold mb-2" style={{ color: "var(--foreground)" }}>
+              ⚽ You predicted: 0-0, Spain wins PKs
+            </p>
+            <div className="space-y-1.5">
+              <ExampleRow actual="0-0, Spain PKs" pts="21" why="10 winner + 6 exact + 4 diff (0 both)" />
+              <ExampleRow actual="0-0, Portugal PKs" pts="11" why="6 exact + 4 diff — wrong PK winner" />
+              <ExampleRow actual="1-1, Spain PKs" pts="15" why="10 winner + 4 diff (0 both)" />
+              <ExampleRow actual="Spain 2-0" pts="1" why="You predicted a draw" />
+            </div>
+          </div>
         </Section>
 
         {/* Locking */}
@@ -255,6 +302,42 @@ function Note({ text }: { text: string }) {
       <p className="text-xs" style={{ color: "var(--gold)" }}>
         💡 {text}
       </p>
+    </div>
+  );
+}
+
+function ExampleRow({
+  actual,
+  pts,
+  why,
+}: {
+  actual: string;
+  pts: string;
+  why: string;
+}) {
+  return (
+    <div
+      className="flex items-center gap-2 py-1.5 px-2 rounded-lg text-xs"
+      style={{ backgroundColor: "rgba(255,255,255,0.03)" }}
+    >
+      <span
+        className="font-bold w-8 text-right flex-shrink-0"
+        style={{ color: "var(--gold)" }}
+      >
+        {pts}
+      </span>
+      <span
+        className="font-medium flex-shrink-0"
+        style={{ color: "var(--foreground)" }}
+      >
+        {actual}
+      </span>
+      <span
+        className="ml-auto text-right"
+        style={{ color: "var(--muted)", fontSize: "10px" }}
+      >
+        {why}
+      </span>
     </div>
   );
 }
