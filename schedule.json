@@ -808,5 +808,75 @@
     "date": "2026-07-03",
     "time_pt": "3:00 PM",
     "venue": "Hard Rock Stadium"
+  },
+  {
+    "id": 82,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Mexico",
+    "away": "Ecuador",
+    "date": "2026-06-30",
+    "time_pt": "6:00 PM",
+    "venue": "Estadio Azteca"
+  },
+  {
+    "id": 83,
+    "group": "R32",
+    "matchday": 1,
+    "home": "England",
+    "away": "Congo DR",
+    "date": "2026-07-01",
+    "time_pt": "9:00 AM",
+    "venue": "Mercedes-Benz Stadium"
+  },
+  {
+    "id": 84,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Belgium",
+    "away": "Senegal",
+    "date": "2026-07-01",
+    "time_pt": "1:00 PM",
+    "venue": "Lumen Field"
+  },
+  {
+    "id": 85,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Spain",
+    "away": "Austria",
+    "date": "2026-07-02",
+    "time_pt": "12:00 PM",
+    "venue": "SoFi Stadium"
+  },
+  {
+    "id": 86,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Portugal",
+    "away": "Croatia",
+    "date": "2026-07-02",
+    "time_pt": "4:00 PM",
+    "venue": "BMO Field"
+  },
+  {
+    "id": 87,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Switzerland",
+    "away": "Algeria",
+    "date": "2026-07-02",
+    "time_pt": "8:00 PM",
+    "venue": "BC Place"
+  },
+  {
+    "id": 88,
+    "group": "R32",
+    "matchday": 1,
+    "home": "Colombia",
+    "away": "Ghana",
+    "date": "2026-07-03",
+    "time_pt": "6:30 PM",
+    "venue": "Arrowhead Stadium"
   }
 ]
