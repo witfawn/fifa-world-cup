@@ -109,32 +109,47 @@ export async function POST(req: NextRequest) {
     const existingLocked = existingRows[0][1]?.value;
     locked = isLocked ?? (existingLocked === 1);
 
+    // Build UPDATE dynamically — Turso pipeline rejects null values
+    const sets = ["home_score = ?1", "away_score = ?2", "is_locked = ?3", "updated_at = ?4"];
+    const args: { type: string; value: string }[] = [
+      { type: "text", value: String(homeScore) },
+      { type: "text", value: String(awayScore) },
+      { type: "text", value: locked ? "1" : "0" },
+      { type: "text", value: String(now) },
+    ];
+    if (validPkWinner) {
+      sets.push("pk_winner = ?5");
+      args.push({ type: "text", value: validPkWinner });
+    }
+    args.push({ type: "text", value: existingId });
+    const setIdx = validPkWinner ? "6" : "5";
     await rawQuery(
-      "UPDATE match_results SET home_score = ?1, away_score = ?2, pk_winner = ?3, is_locked = ?4, updated_at = ?5 WHERE id = ?6",
-      [
-        { type: "text", value: String(homeScore) },
-        { type: "text", value: String(awayScore) },
-        { type: "text", value: validPkWinner },
-        { type: "text", value: locked ? "1" : "0" },
-        { type: "text", value: String(now) },
-        { type: "text", value: existingId },
-      ]
+      `UPDATE match_results SET ${sets.join(", ")} WHERE id = ?${setIdx}`,
+      args
     );
   } else {
     const id = crypto.randomUUID();
     locked = isLocked ?? false;
+    // Build INSERT dynamically — Turso pipeline rejects null values
+    let cols = "id, match_id, home_score, away_score, is_locked, created_at, updated_at";
+    let placeholders = "?1, ?2, ?3, ?4, ?5, ?6, ?7";
+    const insArgs: { type: string; value: string }[] = [
+      { type: "text", value: id },
+      { type: "text", value: String(matchId) },
+      { type: "text", value: String(homeScore) },
+      { type: "text", value: String(awayScore) },
+      { type: "text", value: locked ? "1" : "0" },
+      { type: "text", value: String(now) },
+      { type: "text", value: String(now) },
+    ];
+    if (validPkWinner) {
+      cols = "id, match_id, home_score, away_score, pk_winner, is_locked, created_at, updated_at";
+      placeholders = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8";
+      insArgs.splice(4, 0, { type: "text", value: validPkWinner });
+    }
     await rawQuery(
-      "INSERT INTO match_results (id, match_id, home_score, away_score, pk_winner, is_locked, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-      [
-        { type: "text", value: id },
-        { type: "text", value: String(matchId) },
-        { type: "text", value: String(homeScore) },
-        { type: "text", value: String(awayScore) },
-        { type: "text", value: validPkWinner },
-        { type: "text", value: locked ? "1" : "0" },
-        { type: "text", value: String(now) },
-        { type: "text", value: String(now) },
-      ]
+      `INSERT INTO match_results (${cols}) VALUES (${placeholders})`,
+      insArgs
     );
   }
 
