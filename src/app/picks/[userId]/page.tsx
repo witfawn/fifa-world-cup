@@ -13,8 +13,10 @@ interface Pick {
   away: string;
   predictedHome: number;
   predictedAway: number;
+  predictedPkWinner: string | null;
   actualHome: number | null;
   actualAway: number | null;
+  actualPkWinner: string | null;
   isLocked: boolean;
   points: number | null;
 }
@@ -27,15 +29,18 @@ interface UserData {
 
 // Team flag mapping
 const FLAGS: Record<string, string> = {
-  Mexico: "🇲🇽", "South Africa": "🇿🇦", Brazil: "🇧🇷", Croatia: "🇭🇷",
-  "United States": "🇺🇸", Wales: "🏴󠁧󠁢󠁷󠁬󠁳󠁿", England: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", Iran: "🇮🇷",
-  Argentina: "🇦🇷", "Saudi Arabia": "🇸🇦", France: "🇫🇷", Australia: "🇦🇺",
-  Denmark: "🇩🇰", Tunisia: "🇹🇳", Spain: "🇪🇸", "Costa Rica": "🇨🇷",
-  Germany: "🇩🇪", Japan: "🇯🇵", Belgium: "🇧🇪", Canada: "🇨🇦",
-  Morocco: "🇲🇦", Cameroon: "🇨🇲", Serbia: "🇷🇸",
-  Switzerland: "🇨🇭", Portugal: "🇵🇹", Ghana: "🇬🇭",
-  Uruguay: "🇺🇾", "South Korea": "🇰🇷", Netherlands: "🇳🇱", Senegal: "🇸🇳",
-  Ecuador: "🇪🇨", Qatar: "🇶🇦", Poland: "🇵🇱",
+  Algeria: "🇩🇿", Argentina: "🇦🇷", Australia: "🇦🇺", Austria: "🇦🇹",
+  Belgium: "🇧🇪", "Bosnia-Herzegovina": "🇧🇦", Brazil: "🇧🇷", Canada: "🇨🇦",
+  "Cape Verde": "🇨🇻", Colombia: "🇨🇴", "Congo DR": "🇨🇩", Croatia: "🇭🇷",
+  Curaçao: "🇨🇼", Czechia: "🇨🇿", Ecuador: "🇪🇨", Egypt: "🇪🇬",
+  England: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", France: "🇫🇷", Germany: "🇩🇪", Ghana: "🇬🇭",
+  Haiti: "🇭🇹", Iran: "🇮🇷", Iraq: "🇮🇶", "Ivory Coast": "🇨🇮",
+  Japan: "🇯🇵", Jordan: "🇯🇴", Mexico: "🇲🇽", Morocco: "🇲🇦",
+  Netherlands: "🇳🇱", "New Zealand": "🇳🇿", Norway: "🇳🇴", Panama: "🇵🇦",
+  Paraguay: "🇵🇾", Portugal: "🇵🇹", Qatar: "🇶🇦", "Saudi Arabia": "🇸🇦",
+  Scotland: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", Senegal: "🇸🇳", "South Africa": "🇿🇦", "South Korea": "🇰🇷",
+  Spain: "🇪🇸", Sweden: "🇸🇪", Switzerland: "🇨🇭", Tunisia: "🇹🇳",
+  Türkiye: "🇹🇷", "United States": "🇺🇸", Uruguay: "🇺🇾", Uzbekistan: "🇺🇿",
 };
 
 function getFlag(team: string): string {
@@ -264,7 +269,12 @@ export default function UserPicksPage({
                   <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--muted)" }}>
                     Pick
                   </div>
-                  <div className="text-sm font-bold" style={{ color: "var(--foreground)" }}>
+                  <div className="text-sm font-bold flex items-center justify-center gap-1" style={{ color: "var(--foreground)" }}>
+                    {pick.predictedHome === pick.predictedAway && pick.predictedPkWinner && (
+                      <span className="text-base">
+                        {pick.predictedPkWinner === "home" ? getFlag(pick.home) : getFlag(pick.away)}
+                      </span>
+                    )}
                     {pick.predictedHome} — {pick.predictedAway}
                   </div>
                 </div>
@@ -275,7 +285,13 @@ export default function UserPicksPage({
                     <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--muted)" }}>
                       Final
                     </div>
-                    <div className="text-sm font-bold" style={{ color: "var(--gold)" }}>
+                    <div className="text-sm font-bold flex items-center justify-center gap-1" style={{ color: "var(--gold)" }}>
+                      {pick.actualHome !== null && pick.actualAway !== null &&
+                        pick.actualHome === pick.actualAway && pick.actualPkWinner && (
+                          <span className="text-base">
+                            {pick.actualPkWinner === "home" ? getFlag(pick.home) : getFlag(pick.away)}
+                          </span>
+                      )}
                       {pick.actualHome} — {pick.actualAway}
                     </div>
                   </div>
