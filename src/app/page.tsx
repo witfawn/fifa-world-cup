@@ -314,28 +314,21 @@ export default function HomePage() {
                           {pred.userName}
                         </span>
                         <span
-                          className="text-xs font-bold"
+                          className="text-xs font-bold flex items-center gap-1"
                           style={{ color: "var(--gold)" }}
                         >
-                          {pred.homeScore !== null && pred.awayScore !== null
-                            ? `${pred.homeScore} — ${pred.awayScore}`
-                            : "No pick"}
                           {pred.homeScore !== null && pred.awayScore !== null &&
                             pred.homeScore === pred.awayScore &&
                             pred.pkWinner && (
-                              <span
-                                className="ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                                style={{
-                                  backgroundColor: "rgba(212, 168, 67, 0.15)",
-                                  color: "var(--gold)",
-                                }}
-                              >
+                              <span className="text-sm">
                                 {pred.pkWinner === "home"
                                   ? getTeamFlag(game.home)
-                                  : getTeamFlag(game.away)}{" "}
-                                PKs
+                                  : getTeamFlag(game.away)}
                               </span>
                             )}
+                          {pred.homeScore !== null && pred.awayScore !== null
+                            ? `${pred.homeScore} — ${pred.awayScore}`
+                            : "No pick"}
                         </span>
                       </div>
                     ))}
