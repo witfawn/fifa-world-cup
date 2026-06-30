@@ -71,7 +71,7 @@ export default function HomePage() {
     matchId: number;
     home: string;
     away: string;
-    predictions: { userName: string; homeScore: number | null; awayScore: number | null }[];
+    predictions: { userName: string; homeScore: number | null; awayScore: number | null; pkWinner: string | null }[];
   }[]>([]);
 
   const fetchAllData = useCallback(() => {
@@ -320,6 +320,22 @@ export default function HomePage() {
                           {pred.homeScore !== null && pred.awayScore !== null
                             ? `${pred.homeScore} — ${pred.awayScore}`
                             : "No pick"}
+                          {pred.homeScore !== null && pred.awayScore !== null &&
+                            pred.homeScore === pred.awayScore &&
+                            pred.pkWinner && (
+                              <span
+                                className="ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                                style={{
+                                  backgroundColor: "rgba(212, 168, 67, 0.15)",
+                                  color: "var(--gold)",
+                                }}
+                              >
+                                {pred.pkWinner === "home"
+                                  ? getTeamFlag(game.home)
+                                  : getTeamFlag(game.away)}{" "}
+                                PKs
+                              </span>
+                            )}
                         </span>
                       </div>
                     ))}
