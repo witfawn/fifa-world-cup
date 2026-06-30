@@ -63,14 +63,14 @@ export default function RulesPage() {
         {/* Knockout Stage */}
         <Section title="🏆 Knockout Stage Scoring">
           <p className="text-sm mb-3" style={{ color: "var(--muted)" }}>
-            From Round of 32 onward. You predict after the group stage ends when the bracket is set.
+            From Round of 32 onward. All bonuses stack on top of 1 pt participation.
           </p>
           <ScoringRow points="+10 pts" label="Correct winner" example="You said Brazil advances, Brazil won (even via penalties)" />
           <ScoringRow points="+6 pts" label="Exact score" example="You said 1-1, actual was 1-1 after extra time" />
-          <ScoringRow points="+4 pts" label="Correct winner + goal diff" example="You said France 2-0, actual was France 3-1 (winner + diff correct)" />
+          <ScoringRow points="+4 pts" label="Correct goal difference" example="You said 3-1 (diff 2), actual was 2-0 (diff 2)" />
           <ScoringRow points="1 pt" label="Participation" example="You picked a score — even if wrong, you get 1 point" />
           <ScoringRow points="0 pts" label="No prediction" example="You did not pick this game" />
-          <Note text="Score = result after 90 min (or 120 min if extra time). If you predict a tie, pick which team wins after penalty kicks. The +10 winner bonus uses your PK pick when the game ends in a draw." />
+          <Note text="Score = result after 90 min (or 120 min if extra time). For non-draw predictions, you need the correct winner to earn goal difference or exact score bonuses. For draw predictions, goal diff and exact score are independent of PK winner — you can nail the 1-1 even if your PK pick is wrong." />
         </Section>
 
         {/* Knockout Examples */}
@@ -86,9 +86,9 @@ export default function RulesPage() {
             </p>
             <div className="space-y-1.5">
               <ExampleRow actual="Argentina 2-1" pts="21" why="10 winner + 6 exact + 4 diff (+1 both)" />
-              <ExampleRow actual="Argentina 1-0" pts="16" why="10 winner + 4 diff (+1 both)" />
+              <ExampleRow actual="Argentina 1-0" pts="15" why="10 winner + 4 diff (+1 both)" />
               <ExampleRow actual="Argentina 3-1" pts="11" why="10 winner — diff is +2, not +1" />
-              <ExampleRow actual="France 2-1" pts="1" why="Wrong winner" />
+              <ExampleRow actual="France 2-1" pts="1" why="Wrong winner — diff and exact need winner for non-draws" />
               <ExampleRow actual="2-2, Argentina PKs" pts="11" why="10 winner (PK pick right) — wrong score" />
             </div>
           </div>
@@ -102,7 +102,7 @@ export default function RulesPage() {
               <ExampleRow actual="1-1, Brazil PKs" pts="21" why="10 winner + 6 exact + 4 diff (0 both)" />
               <ExampleRow actual="1-1, Germany PKs" pts="11" why="6 exact + 4 diff — wrong PK winner" />
               <ExampleRow actual="2-2, Brazil PKs" pts="15" why="10 winner + 4 diff (0 both)" />
-              <ExampleRow actual="Brazil 2-1" pts="1" why="You predicted a draw" />
+              <ExampleRow actual="Brazil 2-1" pts="11" why="10 winner (Brazil won) — diff and exact don't match" />
             </div>
           </div>
 
@@ -115,7 +115,7 @@ export default function RulesPage() {
               <ExampleRow actual="0-0, Spain PKs" pts="21" why="10 winner + 6 exact + 4 diff (0 both)" />
               <ExampleRow actual="0-0, Portugal PKs" pts="11" why="6 exact + 4 diff — wrong PK winner" />
               <ExampleRow actual="1-1, Spain PKs" pts="15" why="10 winner + 4 diff (0 both)" />
-              <ExampleRow actual="Spain 2-0" pts="1" why="You predicted a draw" />
+              <ExampleRow actual="Spain 2-0" pts="11" why="10 winner (Spain won) — diff and exact don't match" />
             </div>
           </div>
         </Section>

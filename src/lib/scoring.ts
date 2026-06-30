@@ -11,12 +11,15 @@
  * Knockout Stage (cumulative bonuses — all stack on top of 1 pt participation):
  *   Participation (picked)    → 1 point (always, if you made a pick)
  *   Correct winner            → +10 points
- *   Correct goal difference   → +4 points
- *   Exact score               → +6 points
+ *   Correct goal difference   → +4 points  (requires correct winner for non-draws;
+ *                                           independent for draw predictions)
+ *   Exact score               → +6 points  (requires correct winner for non-draws;
+ *                                           independent for draw predictions)
  *   → Exact match:            1 + 10 + 6 + 4 = 21 pts
  *   → Winner + diff (not exact): 1 + 10 + 4 = 15 pts
  *   → Winner only:            1 + 10 = 11 pts
- *   Wrong winner:             1 pt (participation only)
+ *   → Draw pick, wrong PK winner: 1 + 6 + 4 = 11 pts
+ *   → Wrong winner (non-draw): 1 pt (participation only)
  *   No prediction             → 0 points
  *
  * Knockout PK edge case:
@@ -120,17 +123,24 @@ function calculateKnockoutPoints(
   const actualWinner = getEffectiveWinner(actual.homeScore, actual.awayScore, actual.pkWinner);
   const predDiff = Math.abs(pred.homeScore - pred.awayScore);
   const actualDiff = Math.abs(actual.homeScore - actual.awayScore);
+  const isDrawPrediction = pred.homeScore === pred.awayScore;
 
-  // Correct winner → +10 pts
   if (predWinner === actualWinner) {
     points += 10;
 
-    // Correct winner + goal difference → +4 pts
+    // Goal diff and exact score always count when winner is correct
     if (predDiff === actualDiff) {
       points += 4;
     }
-
-    // Exact score → +6 pts
+    if (pred.homeScore === actual.homeScore && pred.awayScore === actual.awayScore) {
+      points += 6;
+    }
+  } else if (isDrawPrediction) {
+    // Draw prediction with wrong PK winner: goal diff and exact score
+    // are still independent (PK winner is a separate dimension)
+    if (predDiff === actualDiff) {
+      points += 4;
+    }
     if (pred.homeScore === actual.homeScore && pred.awayScore === actual.awayScore) {
       points += 6;
     }
