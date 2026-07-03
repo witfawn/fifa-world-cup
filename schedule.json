@@ -878,5 +878,65 @@
     "date": "2026-07-03",
     "time_pt": "6:30 PM",
     "venue": "Arrowhead Stadium"
+  },
+  {
+    "id": 89,
+    "group": "R16",
+    "matchday": 1,
+    "home": "Paraguay",
+    "away": "France",
+    "date": "2026-07-04",
+    "time_pt": "2:00 PM",
+    "venue": "Lincoln Financial Field"
+  },
+  {
+    "id": 90,
+    "group": "R16",
+    "matchday": 1,
+    "home": "Canada",
+    "away": "Morocco",
+    "date": "2026-07-04",
+    "time_pt": "10:00 AM",
+    "venue": "NRG Stadium"
+  },
+  {
+    "id": 91,
+    "group": "R16",
+    "matchday": 1,
+    "home": "Brazil",
+    "away": "Norway",
+    "date": "2026-07-05",
+    "time_pt": "1:00 PM",
+    "venue": "MetLife Stadium"
+  },
+  {
+    "id": 92,
+    "group": "R16",
+    "matchday": 1,
+    "home": "Mexico",
+    "away": "England",
+    "date": "2026-07-05",
+    "time_pt": "5:00 PM",
+    "venue": "Estadio Azteca"
+  },
+  {
+    "id": 93,
+    "group": "R16",
+    "matchday": 1,
+    "home": "Portugal",
+    "away": "Spain",
+    "date": "2026-07-06",
+    "time_pt": "12:00 PM",
+    "venue": "AT&T Stadium"
+  },
+  {
+    "id": 94,
+    "group": "R16",
+    "matchday": 1,
+    "home": "United States",
+    "away": "Belgium",
+    "date": "2026-07-06",
+    "time_pt": "2:00 PM",
+    "venue": "Lumen Field"
   }
 ]
