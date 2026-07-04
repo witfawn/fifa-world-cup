@@ -938,5 +938,25 @@
     "date": "2026-07-06",
     "time_pt": "2:00 PM",
     "venue": "Lumen Field"
+  },
+  {
+    "id": 95,
+    "group": "R16",
+    "matchday": 1,
+    "home": "Egypt",
+    "away": "Argentina",
+    "date": "2026-07-07",
+    "time_pt": "9:00 AM",
+    "venue": "Mercedes-Benz Stadium"
+  },
+  {
+    "id": 96,
+    "group": "R16",
+    "matchday": 1,
+    "home": "Switzerland",
+    "away": "Colombia",
+    "date": "2026-07-07",
+    "time_pt": "1:00 PM",
+    "venue": "BC Place"
   }
 ]
