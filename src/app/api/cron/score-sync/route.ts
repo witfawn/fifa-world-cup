@@ -132,7 +132,7 @@ async function fetchRecentMatches(): Promise<{ data: any; rateLimit: { available
 
 /** Map API match to our internal match ID using team names */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapToInternalMatch(apiMatch: any): number | null {
+function mapToInternalMatch(apiMatch: any): { id: number; swapped: boolean } | null {
   const schedule = getAllMatches();
   const homeName = TEAM_NAME_MAP[apiMatch.homeTeam.name] || apiMatch.homeTeam.name;
   const awayName = TEAM_NAME_MAP[apiMatch.awayTeam.name] || apiMatch.awayTeam.name;
@@ -141,7 +141,14 @@ function mapToInternalMatch(apiMatch: any): number | null {
   const match = schedule.find(
     (m) => m.home === homeName && m.away === awayName
   );
-  if (match) return match.id;
+  if (match) return { id: match.id, swapped: false };
+
+  // Reversed match — FIFA assigns "home" administratively, but our schedule
+  // may have the teams in the opposite order (no real home team in World Cup)
+  const revMatch = schedule.find(
+    (m) => m.home === awayName && m.away === homeName
+  );
+  if (revMatch) return { id: revMatch.id, swapped: true };
 
   // Fuzzy fallback: case-insensitive, handles minor spelling differences
   const homeLower = homeName.toLowerCase();
@@ -155,7 +162,23 @@ function mapToInternalMatch(apiMatch: any): number | null {
     );
   });
 
-  return fuzzyMatch ? fuzzyMatch.id : null;
+  if (fuzzyMatch) {
+    // Check if fuzzy match is already correct orientation
+    const isCorrect = fuzzyMatch.home.toLowerCase() === homeLower;
+    return { id: fuzzyMatch.id, swapped: !isCorrect };
+  }
+
+  // Fuzzy reversed
+  const fuzzyRevMatch = schedule.find((m) => {
+    const mHome = m.home.toLowerCase();
+    const mAway = m.away.toLowerCase();
+    return (
+      (mHome.includes(awayLower) || awayLower.includes(mHome)) &&
+      (mAway.includes(homeLower) || homeLower.includes(mAway))
+    );
+  });
+
+  return fuzzyRevMatch ? { id: fuzzyRevMatch.id, swapped: true } : null;
 }
 
 /** Ensure match_results row exists, return whether it was already locked */
@@ -320,8 +343,8 @@ export async function GET(_req: NextRequest) {
     for (const apiMatch of matches) {
       if (apiMatch.status !== "FINISHED" && apiMatch.status !== "AWARDED") continue;
 
-      const internalId = mapToInternalMatch(apiMatch);
-      if (internalId === null) {
+      const matchInfo = mapToInternalMatch(apiMatch);
+      if (matchInfo === null) {
         results.push({
           api: `${apiMatch.homeTeam.name} vs ${apiMatch.awayTeam.name}`,
           status: "no_match_found",
@@ -329,8 +352,8 @@ export async function GET(_req: NextRequest) {
         continue;
       }
 
-      const homeScore = apiMatch.score?.fullTime?.home;
-      const awayScore = apiMatch.score?.fullTime?.away;
+      let homeScore = apiMatch.score?.fullTime?.home;
+      let awayScore = apiMatch.score?.fullTime?.away;
       if (homeScore === null || awayScore === null) continue;
 
       // Extract PK winner if match went to penalties
@@ -341,18 +364,26 @@ export async function GET(_req: NextRequest) {
         else if (penalties.away > penalties.home) pkWinner = "away";
       }
 
-      const { alreadyLocked, isNew } = await upsertScore(internalId, homeScore, awayScore, true, pkWinner);
+      // If our schedule has teams swapped vs the API, swap scores & PK winner
+      if (matchInfo.swapped) {
+        [homeScore, awayScore] = [awayScore, homeScore];
+        if (pkWinner === "home") pkWinner = "away";
+        else if (pkWinner === "away") pkWinner = "home";
+      }
+
+      const { alreadyLocked, isNew } = await upsertScore(matchInfo.id, homeScore, awayScore, true, pkWinner);
 
       let scored = 0;
       if (!alreadyLocked) {
-        scored = await scoreMatch(internalId, homeScore, awayScore, pkWinner);
+        scored = await scoreMatch(matchInfo.id, homeScore, awayScore, pkWinner);
       }
 
       results.push({
         match: `${apiMatch.homeTeam.name} vs ${apiMatch.awayTeam.name}`,
         score: `${homeScore}-${awayScore}`,
         pkWinner,
-        internalId,
+        internalId: matchInfo.id,
+        swapped: matchInfo.swapped,
         isNew,
         alreadyLocked,
         scored,
