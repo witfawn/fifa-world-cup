@@ -958,5 +958,45 @@
     "date": "2026-07-07",
     "time_pt": "1:00 PM",
     "venue": "BC Place"
+  },
+  {
+    "id": 97,
+    "group": "QF",
+    "matchday": 1,
+    "home": "France",
+    "away": "Morocco",
+    "date": "2026-07-09",
+    "time_pt": "1:00 PM",
+    "venue": "Gillette Stadium"
+  },
+  {
+    "id": 98,
+    "group": "QF",
+    "matchday": 1,
+    "home": "Spain",
+    "away": "Belgium",
+    "date": "2026-07-10",
+    "time_pt": "12:00 PM",
+    "venue": "SoFi Stadium"
+  },
+  {
+    "id": 99,
+    "group": "QF",
+    "matchday": 1,
+    "home": "Norway",
+    "away": "England",
+    "date": "2026-07-11",
+    "time_pt": "2:00 PM",
+    "venue": "Hard Rock Stadium"
+  },
+  {
+    "id": 100,
+    "group": "QF",
+    "matchday": 1,
+    "home": "Argentina",
+    "away": "Switzerland",
+    "date": "2026-07-11",
+    "time_pt": "6:00 PM",
+    "venue": "Arrowhead Stadium"
   }
 ]
