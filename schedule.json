@@ -998,5 +998,25 @@
     "date": "2026-07-11",
     "time_pt": "6:00 PM",
     "venue": "Arrowhead Stadium"
+  },
+  {
+    "id": 101,
+    "group": "SF",
+    "matchday": 1,
+    "home": "France",
+    "away": "Spain",
+    "date": "2026-07-14",
+    "time_pt": "12:00 PM",
+    "venue": "AT&T Stadium"
+  },
+  {
+    "id": 102,
+    "group": "SF",
+    "matchday": 1,
+    "home": "England",
+    "away": "Argentina",
+    "date": "2026-07-15",
+    "time_pt": "12:00 PM",
+    "venue": "Mercedes-Benz Stadium"
   }
 ]
