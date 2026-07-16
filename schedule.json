@@ -1018,5 +1018,25 @@
     "date": "2026-07-15",
     "time_pt": "12:00 PM",
     "venue": "Mercedes-Benz Stadium"
+  },
+  {
+    "id": 103,
+    "group": "TP",
+    "matchday": 1,
+    "home": "France",
+    "away": "England",
+    "date": "2026-07-18",
+    "time_pt": "2:00 PM",
+    "venue": "Hard Rock Stadium"
+  },
+  {
+    "id": 104,
+    "group": "F",
+    "matchday": 1,
+    "home": "Spain",
+    "away": "Argentina",
+    "date": "2026-07-19",
+    "time_pt": "12:00 PM",
+    "venue": "MetLife Stadium"
   }
 ]
